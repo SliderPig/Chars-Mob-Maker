@@ -76,7 +76,7 @@ final class AddPartPopup implements EditorScreen.Popup {
     @Override
     public void draw(EditorScreen sc) {
         Ui ui = s.ui;
-        float w = Math.min(ui.width - 60f, 470f), h = Math.min(ui.height - 60f, 320f);
+        float w = Math.min(ui.width - 60f, 470f), h = tab == Tab.BOX ? 150f : Math.min(ui.height - 60f, 320f);
         float x0 = (ui.width - w) / 2f, y0 = (ui.height - h) / 2f, x1 = x0 + w, y1 = y0 + h;
         boolean clickedOutside = ui.pressed && !(ui.mx >= x0 && ui.mx < x1 && ui.my >= y0 && ui.my < y1);
         ui.draw.rect(0f, 0f, ui.width, ui.height, 0f, 0x60100815);
@@ -133,7 +133,7 @@ final class AddPartPopup implements EditorScreen.Popup {
             place(p);
             s.popup = null;
         }
-        float jb = 90f;
+        float jb = 120f;
         if (ui.button("add_joint", cx - jb / 2f, y0 + 72f, jb, 16f, "Add an empty joint")) {
             Part p = new Part();
             p.kind = Part.Kind.CUBE;

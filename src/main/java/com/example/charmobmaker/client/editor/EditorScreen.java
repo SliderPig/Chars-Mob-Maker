@@ -173,7 +173,7 @@ public final class EditorScreen extends Screen {
         if (state.unsaved()) d.circle(x1 - 7f, y + h / 2f, 2f, Ui.PINK);
 
         // Build / Stats / Animate
-        float tabW = 56f;
+        float tabW = w < 720f ? 48f : 56f;
         float tabsX = (leftW + 12f + w - rightW - 12f) / 2f - tabW * 1.5f - 4f;
         ui.panel(tabsX, y, tabsX + tabW * 3f + 8f, y + h, h / 2f);
         String[] names = {"Build", "Stats", "Animate"};

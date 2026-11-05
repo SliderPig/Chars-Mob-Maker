@@ -220,8 +220,8 @@ def chicken_cow():
     head = m.bone('Head', chicken, 'head', (0, 21, 10), scale=[1.6, 1.6, 1.6], head=True)
     m.bone('Beak', chicken, 'beak', (0, 0, 0), head)
     m.bone('Wattle', chicken, 'red_thing', (0, 0, 0), head)
-    lwing = m.bone('Left wing', chicken, 'left_wing', (5.5, 22, 3), scale=[1.3, 1.3, 1.3])
-    rwing = m.bone('Right wing', chicken, 'right_wing', (-5.5, 22, 3), scale=[1.3, 1.3, 1.3])
+    lwing = m.bone('Left wing', chicken, 'left_wing', (7.3, 18, 3), scale=[1.3, 1.3, 1.3])
+    rwing = m.bone('Right wing', chicken, 'right_wing', (-7.3, 18, 3), scale=[1.3, 1.3, 1.3])
     m.clip('idle', 2.4)
     m.key('idle', head, 'rot', 0, 0, 0, 0)
     m.key('idle', head, 'rot', 0.3, 0, 0, 0)
@@ -321,10 +321,10 @@ def bone_knight():
 def magma_eye():
     m = Mob('magma_eye', 'Magma Eye')
     core = m.block('Core', 'minecraft:magma_block', (0, 14, 0), glow=True, head=True, scale=[0.9, 0.9, 0.9])
-    m.box('Eye', (9, 9, 1), (0, 0, 7.6), core, colour='FFFFE066', glow=True)
-    m.box('Pupil', (4, 7, 1), (0, 0, 8.3), core, colour='FF16121A', glow=True)
+    m.box('Eye', (9, 9, 1), (0, 0, 8.3), core, colour='FFFFE066', glow=True)
+    m.box('Pupil', (4, 7, 1), (0, 0, 9.0), core, colour='FF16121A', glow=True)
     joint = m.box('Orbit', (0, 0, 0), (0, 14, 0))
-    for i, (x, z, block) in enumerate(((13, 0, 'minecraft:blackstone'), (-13, 0, 'minecraft:blackstone'), (0, 13, 'minecraft:crying_obsidian'), (0, -13, 'minecraft:crying_obsidian'))):
+    for i, (x, z, block) in enumerate(((10, 10, 'minecraft:blackstone'), (-10, -10, 'minecraft:blackstone'), (-10, 10, 'minecraft:crying_obsidian'), (10, -10, 'minecraft:crying_obsidian'))):
         m.block('Rock %d' % (i + 1), block, (x, 0, z), joint, scale=[0.36, 0.36, 0.36])
     m.clip('idle', 4.0)
     m.key('idle', joint, 'rot', 0, 0, 0, 0, 'linear')

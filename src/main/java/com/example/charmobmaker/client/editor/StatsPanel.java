@@ -247,7 +247,7 @@ final class StatsPanel {
         Ui ui = s.ui;
         ui.text(label, left, y + 2f, Ui.TEXT_DIM);
         float bx = left + 34f, bw = width - 34f - (current.isEmpty() ? 0f : 30f);
-        String pretty = current.isEmpty() ? "None" : current.replace("minecraft:", "");
+        String pretty = current.isEmpty() ? "None" : current.replace("minecraft:", "").replace("entity.", "");
         final String[] out = {current};
         if (ui.button(id, bx, y, bw, 12f, ui.fit(pretty, bw - 8f))) {
             s.popup = PickerPopup.sounds(s, chosen -> pendingSound(id, chosen));

@@ -14,7 +14,8 @@ final class PaintPopup implements EditorScreen.Popup {
     private int tool;
     private int colour = 0xFFFF8FC7;
     private int face = -1; // -1 = every side
-    private int cell;
+    private int cell = -1; // -1 = a fresh one, only added once something gets painted on it
+    private final int[] fresh = new int[256];
     private boolean painting;
 
     PaintPopup(EditorScreen s, Part part) {
@@ -28,7 +29,9 @@ final class PaintPopup implements EditorScreen.Popup {
                 }
             }
         }
-        if (face < 0) cell = Math.max(0, part.paint);
+        if (face < 0) cell = part.paint;
+        // a new painting starts in the box's own colour
+        java.util.Arrays.fill(fresh, part.color | 0xFF000000);
     }
 
     @Override
@@ -40,8 +43,8 @@ final class PaintPopup implements EditorScreen.Popup {
             s.popup = null;
             return;
         }
-        float w = 292f, h = Math.min(ui.height - 16f, 410f);
-        float x0 = 10f, y0 = (ui.height - h) / 2f, x1 = x0 + w, y1 = y0 + h;
+        float w = 292f, h = Math.min(ui.height - 38f, 410f);
+        float x0 = 10f, y0 = 32f, x1 = x0 + w, y1 = y0 + h;
         boolean outside = ui.pressed && !(ui.mx >= x0 && ui.mx < x1 && ui.my >= y0 && ui.my < y1);
         ui.panel(x0, y0, x1, y1, 12f);
         ui.flush();
@@ -52,11 +55,7 @@ final class PaintPopup implements EditorScreen.Popup {
             st.changed();
             return;
         }
-        if (st.design.paints.isEmpty()) {
-            st.design.paints.add(new int[256]);
-            st.changed();
-        }
-        cell = Math.max(0, Math.min(st.design.paints.size() - 1, cell));
+        if (cell >= st.design.paints.size()) cell = -1;
 
         // which side of the box
         float y = y0 + 25f;
@@ -83,11 +82,7 @@ final class PaintPopup implements EditorScreen.Popup {
         int nextIndex = st.design.paints.size();
         if (nextIndex < Limits.MAX_PAINTS) {
             float cx = cellX + (nextIndex % 8) * (tiny + 3f), cy = y + (nextIndex / 8) * (tiny + 3f);
-            if (ui.chip("cell_add", cx, cy, tiny, tiny, "+", false)) {
-                st.design.paints.add(new int[256]);
-                cell = nextIndex;
-                st.changed();
-            }
+            if (ui.chip("cell_add", cx, cy, tiny, tiny, "+", cell < 0)) cell = -1;
         }
         y += (Math.min(Limits.MAX_PAINTS, nextIndex + 1) + 7) / 8 * (tiny + 3f) + 2f;
 
@@ -97,7 +92,7 @@ final class PaintPopup implements EditorScreen.Popup {
         float px = x0 + (w - size) / 2f, py = y;
         float step = size / 16f;
         d.halo(px, py, px + size, py + size, 3f, 0x60000000, 6f);
-        int[] pixels = st.design.paints.get(cell);
+        int[] pixels = cell >= 0 ? st.design.paints.get(cell) : fresh;
         for (int iy = 0; iy < 16; iy++) {
             for (int ix = 0; ix < 16; ix++) {
                 float a = px + ix * step, b = py + iy * step;
@@ -116,7 +111,7 @@ final class PaintPopup implements EditorScreen.Popup {
             int ix = (int) ((ui.mx - px) / step), iy = (int) ((ui.my - py) / step);
             if (tool == 1) {
                 Paints.fillFrom(pixels, ix, iy, colour);
-                applyToPart();
+                applyToPart(pixels);
             }
         }
         if (painting && ui.mouseIsDown() && overCanvas && tool != 1) {
@@ -125,7 +120,7 @@ final class PaintPopup implements EditorScreen.Popup {
                 int newColour = tool == 2 ? 0 : colour;
                 if (pixels[iy * 16 + ix] != newColour) {
                     pixels[iy * 16 + ix] = newColour;
-                    applyToPart();
+                    applyToPart(pixels);
                 }
             }
         }
@@ -142,7 +137,7 @@ final class PaintPopup implements EditorScreen.Popup {
         for (int i = 0; i < TOOLS.length; i++) {
             if (ui.chip("tool_paint_" + i, x0 + 10f + i * (tw + 2f), y, tw, 13f, TOOLS[i], tool == i)) tool = i;
         }
-        if (ui.button("use_cell", x1 - 112f, y, 102f, 13f, face < 0 ? "Use on all sides" : "Use on this side")) applyToPart();
+        if (ui.button("use_cell", x1 - 112f, y, 102f, 13f, face < 0 ? "Use on all sides" : "Use on this side", false, cell >= 0)) applyToPart(pixels);
         y += 18f;
         float dot = 5f, stepD = (w - 24f) / 8f;
         for (int i = 0; i < BuildPanel.SWATCHES.length; i++) {
@@ -167,8 +162,16 @@ final class PaintPopup implements EditorScreen.Popup {
     }
 
     // Tells the part to show the cell being painted.
-    private void applyToPart() {
+    private void applyToPart(int[] pixels) {
         EditorState st = s.state;
+        if (cell < 0) {
+            if (st.design.paints.size() >= Limits.MAX_PAINTS) {
+                st.say("A mob can have " + Limits.MAX_PAINTS + " paintings at most", true);
+                return;
+            }
+            st.design.paints.add(pixels.clone());
+            cell = st.design.paints.size() - 1;
+        }
         if (face < 0) {
             part.paint = cell;
             if (part.facePaint != null) java.util.Arrays.fill(part.facePaint, -1);

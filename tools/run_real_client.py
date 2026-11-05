@@ -14,7 +14,9 @@ META = os.path.join(M, 'meta')
 VERSION = '1.20.1-47.4.28'
 JAVA = r'C:\Program Files\Eclipse Adoptium\jdk-17.0.20.101-hotspot\bin\java.exe'
 EMBEDDIUM = os.path.join(os.environ['USERPROFILE'], 'Downloads', 'embeddium-0.3.31+mc1.20.1.jar')
-RUN = os.path.abspath('run-real')
+GUEST = 'guest' in sys.argv  # a second game that joins one started with 'lanhost', see run_lan_test.py
+LAN = GUEST or 'lanhost' in sys.argv
+RUN = os.path.abspath('run-real-guest' if GUEST else 'run-real')
 TIMEOUT = 520
 
 
@@ -61,8 +63,8 @@ def main():
 
     natives = os.path.join(META, 'natives', VERSION)
     values = {'natives_directory': natives, 'launcher_name': 'charmobmaker-test', 'launcher_version': '1', 'classpath': os.pathsep.join(cp), 'classpath_separator': os.pathsep,
-              'library_directory': os.path.join(META, 'libraries'), 'version_name': VERSION, 'auth_player_name': 'Dev', 'game_directory': RUN, 'assets_root': os.path.join(META, 'assets'),
-              'assets_index_name': d['assets'], 'auth_uuid': '00000000000000000000000000000abc', 'auth_access_token': '0', 'clientid': '0', 'auth_xuid': '0', 'user_type': 'legacy', 'version_type': 'release'}
+              'library_directory': os.path.join(META, 'libraries'), 'version_name': VERSION, 'auth_player_name': 'Dev2' if GUEST else 'Dev', 'game_directory': RUN, 'assets_root': os.path.join(META, 'assets'),
+              'assets_index_name': d['assets'], 'auth_uuid': '00000000000000000000000000000abd' if GUEST else '00000000000000000000000000000abc', 'auth_access_token': '0', 'clientid': '0', 'auth_xuid': '0', 'user_type': 'legacy', 'version_type': 'release'}
 
     def fill(text):
         for key, value in values.items():
@@ -81,7 +83,9 @@ def main():
 
     only = [a[len('only='):] for a in sys.argv if a.startswith('only=')]
     extra = ['-Dcharmobmaker.only=' + only[0]] if only else []
-    cmd = [JAVA, '-Xmx2000M', '-Dcharmobmaker.smokeclient=true'] + extra + flat(d['arguments']['jvm']) + [d['mainClass']] + flat(d['arguments']['game']) + ['--width', '1600', '--height', '900']
+    mode = ['-Dcharmobmaker.languest=true'] if GUEST else ['-Dcharmobmaker.lanhost=true'] if LAN else ['-Dcharmobmaker.smokeclient=true']
+    size = ['--width', '960', '--height', '540'] if LAN else ['--width', '1600', '--height', '900']
+    cmd = [JAVA, '-Xmx1800M' if LAN else '-Xmx2000M'] + mode + extra + flat(d['arguments']['jvm']) + [d['mainClass']] + flat(d['arguments']['game']) + size
     with open(os.path.join(RUN, 'launch.log'), 'w', encoding='utf-8', errors='replace') as log:
         try:
             result = subprocess.run(cmd, cwd=RUN, stdout=log, stderr=subprocess.STDOUT, timeout=TIMEOUT)

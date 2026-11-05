@@ -430,9 +430,13 @@ public final class ClientChecks {
             p.connection.teleport(p.getX(), p.getY() + 1, p.getZ(), -90f, 12f);
         });
         shot(30, "30_world_lineup");
-        server(1, p -> p.connection.teleport(p.getX(), p.getY(), p.getZ(), -135f, 35f));
-        shot(6, "30b_bench_close");
-        server(1, p -> p.connection.teleport(p.getX(), p.getY(), p.getZ(), -90f, 12f));
+        server(1, p -> {
+            homeX = p.getX();
+            homeZ = p.getZ();
+            p.connection.teleport(p.getX() + 2.4, p.getY(), p.getZ() - 6.0, -60f, 42f);
+        });
+        shot(8, "30b_bench_close");
+        server(1, p -> p.connection.teleport(homeX, p.getY(), homeZ, -90f, 12f));
         check(1, "hitbox came from the design", () -> {
             for (CustomMob m : Minecraft.getInstance().level.getEntitiesOfClass(CustomMob.class, Minecraft.getInstance().player.getBoundingBox().inflate(32.0))) {
                 if ("block_golem".equals(m.designId())) return Math.abs(m.getBbHeight() - 2.8f) < 0.01f;
@@ -461,6 +465,23 @@ public final class ClientChecks {
         shot(12, "33_dying_a");
         shot(14, "34_dying_b");
         check(60, "dead mobs left drops on the ground", () -> !Minecraft.getInstance().level.getEntitiesOfClass(net.minecraft.world.entity.item.ItemEntity.class, Minecraft.getInstance().player.getBoundingBox().inflate(32.0)).isEmpty());
+        // spawning on their own: flat grass all round, so one should turn up within a few tries
+        server(1, p -> {
+            var d = Designs.SERVER.get("pink_cat").copy();
+            d.stats.spawnNaturally = true;
+            d.stats.spawnRate = 100;
+            d.stats.spawnMaxNearby = 8;
+            d.stats.spawnGroup = 2;
+            com.example.charmobmaker.DesignStore.store(d, "", "");
+            p.serverLevel().getGameRules().getRule(GameRules.RULE_DOMOBSPAWNING).set(true, p.getServer());
+        });
+        server(300, p -> {
+            long natural = p.serverLevel().getEntitiesOfClass(CustomMob.class, p.getBoundingBox().inflate(64.0), CustomMob::isNatural).size();
+            naturalSeen = natural > 0;
+            CharMobMaker.LOG.info("[ClientCheck] naturally spawned: {}", natural);
+            p.serverLevel().getGameRules().getRule(GameRules.RULE_DOMOBSPAWNING).set(false, p.getServer());
+        });
+        check(5, "a design set to spawn on its own did", () -> naturalSeen);
         later(10, () -> {
             CharMobMaker.LOG.info("[ClientCheck] finished, {} problems", problems);
             Minecraft.getInstance().stop();
@@ -469,6 +490,8 @@ public final class ClientChecks {
 
     private static float lastX, lastY;
     private static int lastCount;
+    private static double homeX, homeZ;
+    private static volatile boolean naturalSeen;
 
     private static void dragArrow() {
         EditorScreen e = editor();

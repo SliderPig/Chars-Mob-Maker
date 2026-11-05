@@ -476,13 +476,13 @@ public final class Ui {
     // A row of chips sharing a width, each as wide as its words need. Answers which one was pressed, or -1.
     public int chips(String id, float x, float y, float w, float h, String[] labels, int on) {
         float total = 0f;
-        for (String l : labels) total += width(l) + 2f;
+        for (String l : labels) total += width(l) + 7f;
         float gap = 2f;
         float extra = Math.max(0f, (w - total - gap * (labels.length - 1)) / labels.length);
         float cx = x;
         int pressed = -1;
         for (int i = 0; i < labels.length; i++) {
-            float cw = width(labels[i]) + 2f + extra;
+            float cw = width(labels[i]) + 7f + extra;
             if (chip(id + "_" + i, cx, y, cw, h, labels[i], i == on)) pressed = i;
             cx += cw + gap;
         }
