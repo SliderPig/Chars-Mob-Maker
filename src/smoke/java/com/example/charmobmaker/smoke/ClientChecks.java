@@ -174,6 +174,7 @@ public final class ClientChecks {
         // a look at each of the others from the front
         for (String id : new String[] {"block_golem", "chicken_headed_cow", "bone_knight", "magma_eye", "inky"}) {
             click(3, "load");
+            click(2, "filter_1");
             click(5, "load_" + id);
             later(2, () -> mouse(800f, 225f));
             shot(6, "03_starter_" + id);
@@ -184,6 +185,7 @@ public final class ClientChecks {
         }
         // sharing: to a file and back, and a Blockbench file
         click(3, "load");
+        click(2, "filter_1");
         click(5, "load_pink_cat");
         click(3, "view_front");
         shot(4, "03_pink_cat_front");
@@ -212,6 +214,7 @@ public final class ClientChecks {
         click(5, "file_pink_cat.json");
         check(4, "the mob file opened again as a new mob", () -> EditorState.get().design.name.equals("Pink Cat") && EditorState.get().design.parts.size() == 9 && EditorState.get().design.id.isEmpty());
         click(3, "load");
+        click(2, "filter_1");
         click(5, "load_pink_cat");
         later(2, () -> mouse(800f, 225f));
         check(1, "pink cat loaded again", () -> "pink_cat".equals(EditorState.get().design.id));
@@ -307,6 +310,7 @@ public final class ClientChecks {
         check(3, "Ctrl+Z undid the last part", () -> EditorState.get().design.parts.size() == lastCount - 1);
         // the buttons under the parts list, by hand
         click(2, "load");
+        click(2, "filter_1");
         click(4, "load_pink_cat");
         later(1, () -> EditorState.get().selected = partNamed("Left front leg").id);
         click(3, "part_copy");
@@ -379,6 +383,7 @@ public final class ClientChecks {
         });
         // the Pink Cat again for the rest
         click(3, "load");
+        click(2, "filter_1");
         click(6, "load_pink_cat");
         later(1, () -> EditorState.get().selected = EditorState.get().design.parts.get(0).id);
 
@@ -534,6 +539,7 @@ public final class ClientChecks {
         click(3, "egg");
         check(6, "the egg button gave an egg", () -> Minecraft.getInstance().player.getInventory().items.stream().anyMatch(i -> i.is(ModContent.EGG.get())));
         click(3, "load");
+        click(2, "filter_1");
         shot(6, "29_list_with_saved");
         click(3, "del_test_save");
         click(3, "del_test_save");
