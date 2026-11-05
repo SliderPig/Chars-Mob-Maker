@@ -387,13 +387,12 @@ LIGHTNING = [
 ]
 
 
-def round_can(m, name, colour, shade, height=11.0, radius=3.0, y=0.0):
-    # four long boxes turned 45 degrees apart make an eight sided can with flat, clean sides
-    wide, thin = radius * 2, radius * 0.83
-    body = m.box(name, (wide, height, thin), (0, y + height / 2, 0), colour=colour)
-    m.box(name + ' side 1', (wide, height, thin), (0, 0, 0), body, colour=shade, rot=[0, 45, 0])
-    m.box(name + ' side 2', (wide, height, thin), (0, 0, 0), body, colour=colour, rot=[0, 90, 0])
-    m.box(name + ' side 3', (wide, height, thin), (0, 0, 0), body, colour=shade, rot=[0, 135, 0])
+def round_can(m, name, colour, shade, height=11.0, y=0.0):
+    # long boxes crossing each other make a can with clean flat sides, wide enough at the front and back for a label
+    body = m.box(name, (6, height, 4), (0, y + height / 2, 0), colour=colour)
+    m.box(name + ' side', (4, height, 6), (0, 0, 0), body, colour=colour)
+    m.box(name + ' corners 1', (6.1, height, 1.7), (0, 0, 0), body, colour=shade, rot=[0, 45, 0])
+    m.box(name + ' corners 2', (6.1, height, 1.7), (0, 0, 0), body, colour=shade, rot=[0, 135, 0])
     return body
 
 
@@ -401,8 +400,8 @@ def energy_drink():
     m = Mob('energy_drink', 'Energy Drink', 'item')
     m.paints.append(cell(LIGHTNING, {'P': 0xFFFF8FC7, 'K': 0xFF16121A, 'W': 0xFFFFFFFF}))
     can = round_can(m, 'Can', 'FFFF8FC7', 'FFE76FAE')
-    m.box('Front label', (4.4, 7.4, 0.12), (0, -0.4, 3.04), can, colour='FFFF8FC7', paint=0)
-    m.box('Back label', (4.4, 7.4, 0.12), (0, -0.4, -3.04), can, colour='FFFF8FC7', paint=0)
+    m.box('Front label', (3.9, 7.4, 0.12), (0, -0.4, 3.04), can, colour='FFFF8FC7', paint=0)
+    m.box('Back label', (3.9, 7.4, 0.12), (0, -0.4, -3.04), can, colour='FFFF8FC7', paint=0)
     m.box('Lid', (4.8, 0.5, 2.0), (0, 5.72, 0), can, colour='FFD8D8E0')
     m.box('Lid side', (4.8, 0.5, 2.0), (0, 5.72, 0), can, colour='FFD8D8E0', rot=[0, 90, 0])
     m.box('Lid corner', (4.8, 0.5, 2.0), (0, 5.72, 0), can, colour='FFC8C8D2', rot=[0, 45, 0])

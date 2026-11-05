@@ -764,7 +764,11 @@ public final class ClientChecks {
         later(4, () -> Minecraft.getInstance().player.closeContainer());
         // drinking it for real
         later(3, () -> Minecraft.getInstance().player.getInventory().selected = 0);
-        server(1, p -> p.getFoodData().setFoodLevel(10));
+        server(1, p -> {
+            p.getFoodData().setFoodLevel(10);
+            // looking up at the sky, or the click would open the machine again
+            p.connection.teleport(p.getX(), p.getY(), p.getZ(), -90f, -50f);
+        });
         later(3, () -> Minecraft.getInstance().options.keyUse.setDown(true));
         shot(14, "57_drinking");
         later(1, () -> Minecraft.getInstance().options.setCameraType(CameraType.THIRD_PERSON_FRONT));
@@ -904,7 +908,11 @@ public final class ClientChecks {
         click(1, "save");
         check(15, "the new item saved", () -> !EditorState.get().design.id.isEmpty() && Designs.CLIENT.containsKey(EditorState.get().design.id));
         click(1, "egg");
-        check(40, "Give put it in the bag", () -> Minecraft.getInstance().player.getInventory().items.stream().anyMatch(i -> com.example.charmobmaker.DesignStacks.idOf(i).equals(EditorState.get().design.id)));
+        check(40, "Give put it in the bag", () -> {
+            var inv = Minecraft.getInstance().player.getInventory().items;
+            CharMobMaker.LOG.info("[ClientCheck] the bag: {} looking for {}", inv.stream().filter(i -> !i.isEmpty()).map(i -> i.getHoverName().getString() + ":" + com.example.charmobmaker.DesignStacks.idOf(i)).toList(), EditorState.get().design.id);
+            return inv.stream().anyMatch(i -> com.example.charmobmaker.DesignStacks.idOf(i).equals(EditorState.get().design.id));
+        });
         click(1, "load");
         shot(5, "80_all_things_list");
         click(1, "filter_2");

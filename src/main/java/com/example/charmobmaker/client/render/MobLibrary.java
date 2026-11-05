@@ -21,6 +21,8 @@ import net.minecraftforge.common.ForgeSpawnEggItem;
 import net.minecraftforge.registries.ForgeRegistries;
 
 import java.lang.reflect.Field;
+import java.lang.reflect.ParameterizedType;
+import java.lang.reflect.Type;
 import java.util.ArrayList;
 import java.util.Comparator;
 import java.util.HashMap;
@@ -193,12 +195,19 @@ public final class MobLibrary {
         }
     }
 
+    // Other mods add their own lists to ModelPart (Embeddium does), so these go by what the field really holds, not just by being a Map or a List.
+    private static boolean holds(Field f, Class<?> what) {
+        if (!(f.getGenericType() instanceof ParameterizedType t)) return false;
+        Type[] args = t.getActualTypeArguments();
+        return args.length > 0 && args[args.length - 1] == what;
+    }
+
     @SuppressWarnings("unchecked")
     private static Map<String, ModelPart> children(ModelPart p) {
         try {
             if (childrenField == null) {
                 for (Field f : ModelPart.class.getDeclaredFields()) {
-                    if (Map.class.isAssignableFrom(f.getType())) {
+                    if (Map.class.isAssignableFrom(f.getType()) && holds(f, ModelPart.class)) {
                         f.setAccessible(true);
                         childrenField = f;
                     }
@@ -215,7 +224,7 @@ public final class MobLibrary {
         try {
             if (cubesField == null) {
                 for (Field f : ModelPart.class.getDeclaredFields()) {
-                    if (List.class.isAssignableFrom(f.getType())) {
+                    if (List.class.isAssignableFrom(f.getType()) && holds(f, ModelPart.Cube.class)) {
                         f.setAccessible(true);
                         cubesField = f;
                     }
