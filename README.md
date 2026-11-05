@@ -102,40 +102,6 @@ A clip only moves the parts it has keys for, so an attack with just arm keys swi
 
 Only ops can make or change any of these on a server (same as mobs); anyone can use the machines and items.
 
-## Blocks, items and screens
-
-**Mobs** at the top has **New: Mob, Block, Item, Screen**. Blocks and items use the same Build and Animate tabs as mobs; only the second tab changes.
-
-### Made blocks
-
-- In Build you see the block space as a thin frame. A 16 pixel box at height 8 fills it exactly. The block's front (+Z) faces you when you place it.
-- The **Block** tab: how solid it is (its own parts, a full block, or walk-through; the green boxes show it), how tough, how bright, its sound, and which screen it opens.
-- A block with no clips goes straight into the chunk like any normal block, so build whole houses with them. Paintings, mob parts and items on it, and blocks with clips, cost a little more each.
-- Clips: **idle** plays all the time, **working** plays while its machine runs.
-
-### Made items
-
-- 3D in the hand, in slots and on the ground.
-- The **Item** tab: drink, eat, instant or nothing; how long it takes; a wait before it can be used again; whether it's used up and what it leaves behind (the can gives back a nugget); potion effects with level and time; healing, food, XP and a bounce; a sound and sparkles; extra tooltip lines. The tooltip shows it all, like a potion.
-
-### Made screens
-
-- **Layout**: add panels, words, slots, buttons, progress arrows or bars, pictures (any item, or paint your own) and a **Steps** strip, then drag them about. The white dot sizes them. What you see is what the game shows. The player's bag is always there; you can move it.
-- **Steps**: what the machine makes. Each step lists what goes in, how long it takes and what comes out. Items you made count too. A result in an output slot can feed the next step without moving it.
-- Save the screen, then on a block's **Block** tab pick it under **Opens a screen**.
-- Buttons can start whatever can go, run one step, or stop. Hover a Steps chip in the game to see what it needs. Or turn on **Starts by itself**.
-- Slots are real server slots, the same as a furnace's, so nothing can be duped or forged from a PC. Hoppers work: in to the input slots, out of the output slots. Words can show `{step}` and `{percent}`.
-
-### The Energy Drink, step by step
-
-1. `/mobmaker give drink_machine`, place it, right click it.
-2. **Mash**: 2 sweet berries + 1 sugar in the slots, press Start.
-3. **Brew**: leave the mash where it is, put in 1 glowstone dust, press Start.
-4. **Can**: leave the brew where it is, put in 1 iron nugget, press Start.
-5. Take your drink, hold right click. Speed II, Haste II, Jump Boost, some healing and food, and the crushed can comes back as a nugget.
-
-Only ops can make or change any of these on a server (same as mobs); anyone can use the machines and items.
-
 ## Commands
 
 | Command | What it does |
