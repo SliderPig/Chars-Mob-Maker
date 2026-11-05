@@ -90,6 +90,8 @@ final class AnimatePanel {
     private void selectedKey() {
         Ui ui = s.ui;
         EditorState st = s.state;
+        // a click higher up in this same frame (switching clips, clearing keys) can let go of the key
+        if (st.key == null) return;
         section("Selected key");
         ui.text("At " + Ui.format(st.key.t, 2) + " s, goes on to the next key:", left, y, Ui.TEXT_DIM);
         y += 11f;
