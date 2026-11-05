@@ -305,6 +305,78 @@ public final class ClientChecks {
             lastCount = before;
         });
         check(3, "Ctrl+Z undid the last part", () -> EditorState.get().design.parts.size() == lastCount - 1);
+        // the buttons under the parts list, by hand
+        click(2, "load");
+        click(4, "load_pink_cat");
+        later(1, () -> EditorState.get().selected = partNamed("Left front leg").id);
+        click(3, "part_copy");
+        check(3, "Copy made a copy", () -> EditorState.get().design.parts.size() == 10);
+        click(2, "undo");
+        check(3, "and Undo took it back", () -> EditorState.get().design.parts.size() == 9);
+        click(2, "redo");
+        check(3, "and Redo brought it again", () -> EditorState.get().design.parts.size() == 10);
+        click(2, "undo");
+        later(1, () -> EditorState.get().selected = partNamed("Left ear").id);
+        click(2, "part_mirror");
+        check(3, "Mirror makes the other side", () -> EditorState.get().design.parts.stream().filter(q -> q.name.equals("Right ear")).count() == 2);
+        click(2, "part_delete");
+        check(3, "Delete deletes", () -> EditorState.get().design.parts.size() == 9);
+        // typing a name and a number, and dragging a slider
+        click(2, "name");
+        typeText(2, "Typed Name");
+        later(2, () -> editor().keyPressed(org.lwjgl.glfw.GLFW.GLFW_KEY_ENTER, 0, 0));
+        check(3, "typing a name works", () -> EditorState.get().design.name.equals("Typed Name"));
+        later(1, () -> EditorState.get().selected = partNamed("Body").id);
+        click(4, "pos1#n");
+        typeText(2, "20.5");
+        later(2, () -> editor().keyPressed(org.lwjgl.glfw.GLFW.GLFW_KEY_ENTER, 0, 0));
+        check(3, "typing a number works", () -> partNamed("Body").pos[1] == 20.5f);
+        later(2, () -> {
+            float[] r = editor().ui.rects.get("rot0#s");
+            mouse(r[0] + 2f, (r[1] + r[3]) / 2f);
+        });
+        later(2, () -> editor().mouseClicked(0, 0, 0));
+        later(2, () -> {
+            float[] r = editor().ui.rects.get("rot0#s");
+            mouse(r[2] - 2f, (r[1] + r[3]) / 2f);
+        });
+        later(2, () -> editor().mouseReleased(0, 0, 0));
+        check(3, "dragging a slider works", () -> partNamed("Body").rot[0] > 100f);
+        // moving a part under another by dragging its row: it stays where it is on screen
+        later(1, () -> before = EditorState.get().compiled().bounds().clone());
+        later(2, () -> {
+            float[] r = editor().ui.rects.get("row_" + partNamed("Tail").id);
+            mouse((r[0] + r[2]) / 2f, (r[1] + r[3]) / 2f);
+        });
+        later(2, () -> editor().mouseClicked(0, 0, 0));
+        later(2, () -> {
+            float[] r = editor().ui.rects.get("row_" + partNamed("Left ear").id);
+            mouse((r[0] + r[2]) / 2f, (r[1] + r[3]) / 2f);
+        });
+        shot(2, "17c_dragging_a_row");
+        later(2, () -> editor().mouseReleased(0, 0, 0));
+        check(3, "dragging a row hangs it from another part", () -> partNamed("Tail").parent.equals(partNamed("Left ear").id));
+        check(1, "and it stayed in place", () -> {
+            float[] now = EditorState.get().compiled().bounds();
+            for (int i = 0; i < 6; i++) if (Math.abs(now[i] - before[i]) > 0.01f) return false;
+            return true;
+        });
+        // clicking on the mob itself picks the part
+        later(2, () -> {
+            EditorState.get().selected = "";
+            editor().selectPart("");
+        });
+        later(1, () -> {
+            float[] at = editor().screenOfPart(partNamed("Head").id);
+            mouse(at[0], at[1]);
+        });
+        later(2, () -> editor().mouseClicked(0, 0, 0));
+        later(2, () -> editor().mouseReleased(0, 0, 0));
+        check(3, "clicking the mob picks the part you clicked", () -> {
+            var p = EditorState.get().selectedPart();
+            CharMobMaker.LOG.info("[ClientCheck] clicked on {}", p == null ? "nothing" : p.name);
+            return p != null;
+        });
         // the Pink Cat again for the rest
         click(3, "load");
         click(6, "load_pink_cat");
@@ -345,6 +417,41 @@ public final class ClientChecks {
         shot(8, "22_sound_picker");
         click(3, "popup_close");
 
+        // the behaviour switches
+        later(1, () -> {
+            var t = EditorState.get().design.stats;
+            t.mood = com.example.charmobmaker.model.Stats.Mood.NEUTRAL;
+            t.flying = false;
+        });
+        later(1, () -> mouse(editor().ui.width - 60f, 200f));
+        later(2, () -> editor().mouseScrolled(0, 0, 90));
+        click(3, "mood_0");
+        check(2, "the mood chips work", () -> EditorState.get().design.stats.mood == com.example.charmobmaker.model.Stats.Mood.HOSTILE);
+        shot(4, "22b_hostile_stats");
+        click(2, "target_villager");
+        check(2, "the target chips work", () -> EditorState.get().design.stats.targets.contains("villager"));
+        click(2, "flying");
+        check(2, "the Flies switch works", () -> EditorState.get().design.stats.flying);
+        click(2, "attack_2");
+        check(2, "the attack chips work", () -> EditorState.get().design.stats.attack == com.example.charmobmaker.model.Stats.Attack.ARROW);
+        click(2, "drop_add");
+        click(5, "pick_search");
+        typeText(2, "diamond");
+        shot(5, "22c_item_picker");
+        click(2, "pick_minecraft:diamond");
+        check(3, "adding a drop works", () -> EditorState.get().design.stats.drops.stream().anyMatch(d -> d.item.equals("minecraft:diamond")));
+        click(2, "snd_ambient");
+        click(4, "pick_search");
+        typeText(2, "pig.ambient");
+        click(5, "pick_minecraft:entity.pig.ambient");
+        check(4, "picking a sound works", () -> EditorState.get().design.stats.ambientSound.equals("minecraft:entity.pig.ambient"));
+        click(2, "undo");
+        click(2, "undo");
+        click(2, "undo");
+        click(2, "undo");
+        click(2, "undo");
+        click(2, "undo");
+
         // animate
         click(4, "tab_animate");
         later(2, () -> {
@@ -365,6 +472,31 @@ public final class ClientChecks {
         click(3, "t_key");
         check(3, "Key button made a key at the playhead", () -> EditorState.get().clip().track(EditorState.get().selected, com.example.charmobmaker.model.Channel.ROT, false).keys.size() >= 3);
         shot(5, "26_new_key");
+        click(2, "ease_bounce");
+        check(2, "the ease chips change the selected key", () -> EditorState.get().key != null && EditorState.get().key.ease == com.example.charmobmaker.model.Ease.BOUNCE);
+        // dragging that key along
+        later(2, () -> {
+            var k = EditorState.get().key;
+            keyTimeBefore = k.t;
+            float[] r = editor().ui.rects.get("k_ROT_" + Math.round(k.t * 1000f));
+            lastX = (r[0] + r[2]) / 2f;
+            lastY = (r[1] + r[3]) / 2f;
+            mouse(lastX, lastY);
+        });
+        later(2, () -> editor().mouseClicked(0, 0, 0));
+        later(2, () -> mouseBy(40f, 0f));
+        later(2, () -> editor().mouseReleased(0, 0, 0));
+        check(3, "dragging a key moves it", () -> EditorState.get().key != null && Math.abs(EditorState.get().key.t - keyTimeBefore) > 0.01f);
+        later(1, () -> EditorState.get().selected = partNamed("Left front leg").id);
+        click(2, "t_copy");
+        later(1, () -> EditorState.get().selected = partNamed("Tail").id);
+        click(2, "t_paste");
+        check(3, "copy and paste of keys", () -> EditorState.get().clip().track(partNamed("Tail").id, com.example.charmobmaker.model.Channel.ROT, false).keys.size() >= 3);
+        later(1, () -> EditorState.get().selected = partNamed("Left front leg").id);
+        click(2, "t_mirror");
+        check(3, "Flip copies the keys to the other side", () -> EditorState.get().clip().track(partNamed("Right front leg").id, com.example.charmobmaker.model.Channel.ROT, false).keys.size() >= 3);
+        click(2, "quick_walk");
+        check(3, "Make a walk for me", () -> EditorState.get().design.clip("walk").keyCount() > 8);
         click(3, "clip_attack");
         shot(6, "27_attack_clip");
         click(3, "clip_add");
@@ -465,6 +597,7 @@ public final class ClientChecks {
         shot(12, "33_dying_a");
         shot(14, "34_dying_b");
         check(60, "dead mobs left drops on the ground", () -> !Minecraft.getInstance().level.getEntitiesOfClass(net.minecraft.world.entity.item.ItemEntity.class, Minecraft.getInstance().player.getBoundingBox().inflate(32.0)).isEmpty());
+        check(1, "the creative tab has the eggs", () -> ModContent.TAB.get().getDisplayItems().size() >= 7);
         // spawning on their own: flat grass all round, so one should turn up within a few tries
         server(1, p -> {
             var d = Designs.SERVER.get("pink_cat").copy();
@@ -490,6 +623,12 @@ public final class ClientChecks {
 
     private static float lastX, lastY;
     private static int lastCount;
+    private static float keyTimeBefore;
+    private static float[] before;
+
+    private static com.example.charmobmaker.model.Part partNamed(String name) {
+        return EditorState.get().design.parts.stream().filter(q -> q.name.equals(name)).findFirst().orElseThrow();
+    }
     private static double homeX, homeZ;
     private static volatile boolean naturalSeen;
 

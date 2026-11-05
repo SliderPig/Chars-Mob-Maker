@@ -125,8 +125,10 @@ public final class EditorState {
     private void apply(String text) {
         if (text == null) return;
         try {
+            String id = design.id;
             design = DesignJson.read(text);
             DesignRules.tidy(design);
+            design.id = id; // going back never makes it forget which mob it is
             keyTrack = null;
             key = null;
             if (design.part(selected) == null) selected = "";
@@ -160,7 +162,7 @@ public final class EditorState {
         waitingForSave = false;
         if (!ok) return;
         if (!id.isEmpty()) design.id = id;
-        history.reset(DesignJson.write(design));
+        history.replaceCurrent(DesignJson.write(design));
         savedText = history.current();
         Minecraft.getInstance().getSoundManager().play(SimpleSoundInstance.forUI(SoundEvents.CAT_AMBIENT, 1.2f, 0.35f));
     }

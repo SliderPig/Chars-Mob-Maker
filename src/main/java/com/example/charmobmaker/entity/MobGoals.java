@@ -1,8 +1,6 @@
 package com.example.charmobmaker.entity;
 
 import com.example.charmobmaker.Designs;
-import com.example.charmobmaker.ModContent;
-import com.example.charmobmaker.model.DesignRules;
 import com.example.charmobmaker.model.Stats;
 import net.minecraft.core.BlockPos;
 import net.minecraft.resources.ResourceLocation;
@@ -21,6 +19,7 @@ import net.minecraft.world.entity.ai.goal.RandomLookAroundGoal;
 import net.minecraft.world.entity.ai.goal.RangedAttackGoal;
 import net.minecraft.world.entity.ai.goal.WaterAvoidingRandomFlyingGoal;
 import net.minecraft.world.entity.ai.goal.WaterAvoidingRandomStrollGoal;
+import net.minecraft.world.entity.ai.goal.WrappedGoal;
 import net.minecraft.world.entity.ai.goal.target.HurtByTargetGoal;
 import net.minecraft.world.entity.ai.goal.target.NearestAttackableTargetGoal;
 import net.minecraft.world.entity.animal.AbstractGolem;
@@ -42,6 +41,9 @@ final class MobGoals {
     private MobGoals() {}
 
     static void build(CustomMob m, Stats s) {
+        // running ones have to be stopped first, or they'd keep hold of moving and looking for good
+        m.goalSelector.getRunningGoals().toList().forEach(WrappedGoal::stop);
+        m.targetSelector.getRunningGoals().toList().forEach(WrappedGoal::stop);
         m.goalSelector.removeAllGoals(g -> true);
         m.targetSelector.removeAllGoals(g -> true);
         if (s.swims && !s.flying) m.goalSelector.addGoal(0, new FloatGoal(m));

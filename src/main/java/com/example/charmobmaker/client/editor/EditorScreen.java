@@ -388,4 +388,8 @@ public final class EditorScreen extends Screen {
     public float[] screenOfSelected() {
         return viewport.screenOf(state, state.selected);
     }
+
+    public float[] screenOfPart(String id) {
+        return viewport.screenOf(state, id);
+    }
 }

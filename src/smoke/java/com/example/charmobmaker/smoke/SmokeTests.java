@@ -100,6 +100,27 @@ public final class SmokeTests {
         h.succeedWhen(() -> h.assertFalse(pig.isAlive(), "the pig is still alive, hunter target " + hunter.getTarget()));
     }
 
+    // The design changes while the mob is busy: its old brain mustn't leave it stuck.
+    @GameTest(template = "empty", timeoutTicks = 500)
+    public static void stillHuntsAfterItsDesignChanges(GameTestHelper h) {
+        String id = design("Changing Hunter", s -> {
+            s.mood = Stats.Mood.HOSTILE;
+            s.targets.clear();
+            s.targets.add("minecraft:pig");
+            s.damage = 0.5f;
+            s.speed = 0.35f;
+        });
+        CustomMob hunter = spawn(h, id, 1, 1);
+        Pig pig = h.spawn(EntityType.PIG, new BlockPos(14, 2, 14));
+        pig.setNoAi(true);
+        h.runAfterDelay(25, () -> {
+            Design d = Designs.SERVER.get(id).copy();
+            d.stats.damage = 200f;
+            DesignStore.store(d, "", "test");
+        });
+        h.succeedWhen(() -> h.assertFalse(pig.isAlive(), "the pig is still alive, hunter target " + hunter.getTarget()));
+    }
+
     @GameTest(template = "empty", timeoutTicks = 300)
     public static void passiveMobLeavesThingsAlone(GameTestHelper h) {
         String id = design("Gentle", s -> {

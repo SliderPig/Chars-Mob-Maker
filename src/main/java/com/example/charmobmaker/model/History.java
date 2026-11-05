@@ -29,6 +29,11 @@ public final class History {
         return true;
     }
 
+    // The same state with a small change that shouldn't count as a step, like the id the server just gave it.
+    public void replaceCurrent(String state) {
+        now = state;
+    }
+
     public boolean canUndo() {
         return !undo.isEmpty();
     }

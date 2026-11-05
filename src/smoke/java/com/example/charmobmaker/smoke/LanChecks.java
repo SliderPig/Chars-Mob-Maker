@@ -110,6 +110,16 @@ public final class LanChecks {
             p.paint = i % 16;
             d.parts.add(p);
         }
+        // a clip full of odd numbers, which don't squeeze well, so the design needs several packets
+        com.example.charmobmaker.model.Clip clip = new com.example.charmobmaker.model.Clip("noise", 30f, com.example.charmobmaker.model.Clip.Loop.LOOP);
+        for (int i = 0; i < 64; i++) {
+            for (com.example.charmobmaker.model.Channel ch : new com.example.charmobmaker.model.Channel[] {com.example.charmobmaker.model.Channel.ROT, com.example.charmobmaker.model.Channel.POS}) {
+                for (int k = 0; k < 30; k++) {
+                    com.example.charmobmaker.model.ClipTools.setKey(clip, "p" + i, ch, k + r.nextFloat() * 0.9f, r.nextFloat() * 90f, r.nextFloat() * 90f, r.nextFloat() * 90f, com.example.charmobmaker.model.Ease.LINEAR);
+                }
+            }
+        }
+        d.clips.add(clip);
         d.stats.width = 2f;
         d.stats.height = 3f;
         return d;
