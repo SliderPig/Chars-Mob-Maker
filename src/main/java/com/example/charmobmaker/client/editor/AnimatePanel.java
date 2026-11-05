@@ -18,7 +18,9 @@ import java.util.List;
 
 // The timeline along the bottom and the pose numbers on the right. Change anything on the mob while here and a key is made at the playhead.
 final class AnimatePanel {
-    private static final String[] BUILT_IN = {"idle", "walk", "attack", "hurt", "death"};
+    private static final String[] MOB_CLIPS = {"idle", "walk", "attack", "hurt", "death"};
+    private static final String[] BLOCK_CLIPS = {"idle", "working"};
+    private static final String[] ITEM_CLIPS = {"idle"};
     private static final int[] CHANNEL_COLOURS = {Ui.PINK, Ui.BLUE, Ui.GREEN};
     private final EditorScreen s;
     private float y, left, width, contentH = 200f;
@@ -172,13 +174,23 @@ final class AnimatePanel {
         if (made.tracks.isEmpty()) st.say("No part names to go on: call parts things like Left leg or Tail", true);
     }
 
-    private static boolean isBuiltIn(String n) {
-        for (String b : BUILT_IN) if (b.equals(n)) return true;
+    private String[] builtIns() {
+        return switch (s.state.design.type) {
+            case BLOCK -> BLOCK_CLIPS;
+            case ITEM -> ITEM_CLIPS;
+            default -> MOB_CLIPS;
+        };
+    }
+
+    private boolean isBuiltIn(String n) {
+        for (String b : builtIns()) if (b.equals(n)) return true;
         return false;
     }
 
-    private static String describe(String clip) {
+    private String describe(String clip) {
+        if (clip.equals("idle") && s.state.design.type != com.example.charmobmaker.model.Design.Type.MOB) return "Plays all the time";
         return switch (clip) {
+            case "working" -> "Plays while the machine runs";
             case "idle" -> "Plays standing around";
             case "walk" -> "Plays while it moves";
             case "attack" -> "Plays when it hits";
@@ -430,7 +442,7 @@ final class AnimatePanel {
     private void clipChips(float x, float y, float limit) {
         Ui ui = s.ui;
         EditorState st = s.state;
-        List<String> names = new ArrayList<>(List.of(BUILT_IN));
+        List<String> names = new ArrayList<>(List.of(builtIns()));
         for (Clip c : st.design.clips) if (!names.contains(c.name)) names.add(c.name);
         float cx = x;
         for (String n : names) {

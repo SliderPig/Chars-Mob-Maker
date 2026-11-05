@@ -1,6 +1,9 @@
 {
   "block.charmobmaker.mob_makers_bench": "Mob Maker's Bench",
   "item.charmobmaker.mob_egg": "Mob Egg",
+  "block.charmobmaker.custom_block": "Made Block",
+  "item.charmobmaker.custom_block": "Made Block",
+  "item.charmobmaker.custom_item": "Made Item",
   "entity.charmobmaker.custom": "Made Mob",
   "itemGroup.charmobmaker": "Mob Maker",
   "key.charmobmaker.open": "Open the Mob Maker",

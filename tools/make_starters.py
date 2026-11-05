@@ -9,13 +9,17 @@ OUT = os.path.join(os.path.dirname(os.path.abspath(__file__)), '..', 'src', 'mai
 
 
 class Mob:
-    def __init__(self, id, name):
+    def __init__(self, id, name, kind='mob'):
         self.id = id
         self.name = name
+        self.kind = kind
         self.parts = []
         self.clips = {}
         self.paints = []
         self.stats = {}
+        self.block_info = None
+        self.item_info = None
+        self.screen_info = None
         self.next = 1
 
     def part(self, name, kind, pos, parent=None, **extra):
@@ -56,7 +60,17 @@ class Mob:
         for c in self.clips.values():
             tracks = [{'part': k[0], 'channel': k[1], 'keys': sorted(v, key=lambda e: e[0])} for k, v in c['tracks'].items()]
             clips.append({'name': c['name'], 'length': c['length'], 'speed': c['speed'], 'loop': c['loop'], 'tracks': tracks})
-        data = {'format': 1, 'id': self.id, 'name': self.name, 'author': 'Char', 'parts': self.parts, 'clips': clips, 'stats': self.stats}
+        data = {'format': 1, 'id': self.id, 'name': self.name, 'author': 'Char', 'parts': self.parts, 'clips': clips}
+        if self.kind != 'mob':
+            data['type'] = self.kind
+        if self.kind == 'mob':
+            data['stats'] = self.stats
+        if self.block_info is not None:
+            data['block'] = self.block_info
+        if self.item_info is not None:
+            data['item'] = self.item_info
+        if self.screen_info is not None:
+            data['screen'] = self.screen_info
         if self.paints:
             data['paints'] = self.paints
         os.makedirs(OUT, exist_ok=True)
@@ -353,6 +367,149 @@ def magma_eye():
     m.write()
 
 
+LIGHTNING = [
+    'PPPPPPPPPPPPPPPP',
+    'PPPPPPPPPPPPPPPP',
+    'PPPPPPPKKKKPPPPP',
+    'PPPPPPKKKKPPPPPP',
+    'PPPPPKKKKPPPPPPP',
+    'PPPPKKKKKKKPPPPP',
+    'PPPPPPPKKKPPPPPP',
+    'PPPPPPKKKPPPPPPP',
+    'PPPPPKKKPPPPPPPP',
+    'PPPPKKPPPPPPPPPP',
+    'PPPKKPPPPPPPPPPP',
+    'PPPKPPPPPPPPPPPP',
+    'PPPPPPPPPPPPPPPP',
+    'WWWWWWWWWWWWWWWW',
+    'PPPPPPPPPPPPPPPP',
+    'PPPPPPPPPPPPPPPP',
+]
+
+
+def round_can(m, name, colour, side_colour, cell_faces, height=11.0, width=6.0, y=0.0):
+    # three boxes turned a little make a round can
+    body = m.box(name, (width, height, width), (0, y + height / 2, 0), colour=colour, facePaint=cell_faces)
+    m.box(name + ' round 1', (width, height, width), (0, 0, 0), body, colour=side_colour, rot=[0, 30, 0])
+    m.box(name + ' round 2', (width, height, width), (0, 0, 0), body, colour=side_colour, rot=[0, 60, 0])
+    return body
+
+
+def energy_drink():
+    m = Mob('energy_drink', 'Energy Drink', 'item')
+    m.paints.append(cell(LIGHTNING, {'P': 0xFFFF8FC7, 'K': 0xFF16121A, 'W': 0xFFFFFFFF}))
+    can = round_can(m, 'Can', 'FFFF8FC7', 'FFD6559C', [0, 0, 0, 0, -1, -1])
+    m.box('Lid', (4.6, 0.6, 4.6), (0, 5.8, 0), can, colour='FFD8D8E0', rot=[0, 45, 0])
+    m.box('Rim', (5.2, 0.5, 5.2), (0, 5.6, 0), can, colour='FFB0B0BC')
+    m.box('Ring pull', (1.2, 0.3, 2.2), (0, 6.2, 0.5), can, colour='FF8E8E9C')
+    m.box('Base', (5.2, 0.5, 5.2), (0, -5.6, 0), can, colour='FFB0B0BC')
+    m.item_info = {'stack': 16, 'use': 'drink', 'useSeconds': 1.6, 'cooldown': 8, 'consume': True, 'returns': 'minecraft:iron_nugget',
+              'heal': 2, 'food': 4, 'saturation': 0.4, 'sound': 'minecraft:entity.player.burp', 'particle': 'minecraft:happy_villager', 'particleCount': 14,
+              'effects': [{'id': 'minecraft:speed', 'level': 2, 'seconds': 60}, {'id': 'minecraft:haste', 'level': 2, 'seconds': 60}, {'id': 'minecraft:jump_boost', 'level': 1, 'seconds': 30}],
+              'lines': ['Wings not included. Purrs included.'], 'handScale': 1.0}
+    m.write()
+
+
+def berry_mash():
+    m = Mob('berry_mash', 'Berry Mash', 'item')
+    bowl = m.block('Bowl', 'minecraft:oak_planks', (0, 1.5, 0), scale=[0.5, 0.19, 0.5])
+    m.box('Mash', (6.5, 1.5, 6.5), (0, 8.5, 0), bowl, colour='FFB03060', scale=[1.5, 5, 1.5], texture='minecraft:block/white_concrete')
+    m.box('Berry', (1.4, 1.4, 1.4), (1.2, 12, 1), bowl, colour='FFE0204A', scale=[2, 5, 2])
+    m.item_info = {'stack': 16, 'use': 'none', 'consume': False, 'lines': ['Step 1 of an Energy Drink'], 'effects': [], 'handScale': 1.0}
+    m.write()
+
+
+def energy_brew():
+    m = Mob('energy_brew', 'Energy Brew', 'item')
+    glass = m.box('Glass', (5.4, 7.5, 5.4), (0, 3.75, 0), colour='A0DDE8F0')
+    m.box('Brew', (4.4, 5.4, 4.4), (0, -0.8, 0), glass, colour='FFFF6FB5', glow=True)
+    m.box('Neck', (2.4, 2.4, 2.4), (0, 4.9, 0), glass, colour='A0DDE8F0')
+    m.box('Cork', (1.8, 1.2, 1.8), (0, 6.4, 0), glass, colour='FF9A6B3E')
+    m.item_info = {'stack': 16, 'use': 'none', 'consume': False, 'lines': ['Step 2 of an Energy Drink'], 'effects': [], 'handScale': 1.0}
+    m.write()
+
+
+def machine_screen():
+    m = Mob('drink_machine_screen', 'Drink Machine Screen', 'screen')
+    m.paints.append(cell([
+        '................',
+        '..K.........K...',
+        '..KK.......KK...',
+        '..KPK.....KPK...',
+        '..KPKKKKKKKPK...',
+        '..KKKKKKKKKKK...',
+        '.KKKKKKKKKKKKK..',
+        '.KKYYKKKKKYYKK..',
+        '.KKYKKKKKKKYKK..',
+        '.KKKKKKPKKKKKK..',
+        '.KKKKKPKPKKKKK..',
+        '..KKKKKKKKKKK...',
+        '...KKKKKKKKK....',
+        '....KKKKKKK.....',
+        '................',
+        '................',
+    ], {'.': 0, 'K': 0xFF16121A, 'P': 0xFFFF8FC7, 'Y': 0xFFFFE066}))
+    def w(kind, x, y, width, height, **extra):
+        d = {'kind': kind, 'x': x, 'y': y, 'w': width, 'h': height, 'colour': extra.pop('colour', 'FFFF8FC7')}
+        d.update(extra)
+        return d
+    widgets = [
+        w('text', 26, 6, 120, 10, text='Drink Machine', colour='FFF8EAF3'),
+        w('image', 8, 3, 15, 15, paint=0),
+        w('steps', 8, 20, 160, 14, colour='FFFF8FC7'),
+        w('panel', 8, 38, 160, 40, colour='B0170E1E'),
+        w('slot', 16, 42, 18, 18),
+        w('slot', 36, 42, 18, 18),
+        w('slot', 124, 42, 18, 18, output=True),
+        w('progress', 62, 45, 54, 12, colour='FFFF8FC7'),
+        w('button', 62, 60, 54, 14, text='Start', action=-1, colour='FFFF8FC7'),
+        w('text', 12, 64, 50, 10, text='{percent}', colour='FFB9A0B6'),
+        w('text', 122, 64, 44, 10, text='{step}', colour='FFB9A0B6'),
+    ]
+    recipes = [
+        {'name': 'Mash', 'inputs': [{'item': 'minecraft:sweet_berries', 'count': 2}, {'item': 'minecraft:sugar', 'count': 1}], 'output': 'design:berry_mash', 'outputCount': 1, 'seconds': 3},
+        {'name': 'Brew', 'inputs': [{'item': 'design:berry_mash', 'count': 1}, {'item': 'minecraft:glowstone_dust', 'count': 1}], 'output': 'design:energy_brew', 'outputCount': 1, 'seconds': 4},
+        {'name': 'Can', 'inputs': [{'item': 'design:energy_brew', 'count': 1}, {'item': 'minecraft:iron_nugget', 'count': 1}], 'output': 'design:energy_drink', 'outputCount': 1, 'seconds': 2},
+    ]
+    m.screen_info = {'width': 176, 'height': 166, 'colourTop': 'FF3A2547', 'colourBottom': 'FF281A32', 'invX': 7, 'invY': 84, 'widgets': widgets, 'recipes': recipes}
+    m.write()
+
+
+def drink_machine():
+    m = Mob('drink_machine', 'Drink Machine', 'block')
+    m.paints.append(cell(LIGHTNING, {'P': 0xFFFF8FC7, 'K': 0xFF16121A, 'W': 0xFFFFFFFF}))
+    base = m.box('Base', (16, 3, 16), (0, 1.5, 0), texture='minecraft:block/polished_blackstone')
+    body = m.box('Body', (12, 9, 10), (0, 6, -2), base, texture='minecraft:block/pink_concrete')
+    m.box('Sign', (6, 6, 0.4), (0, 0.5, 5.2), body, colour='FFFF8FC7', paint=0)
+    tank = m.block('Tank', 'minecraft:pink_stained_glass', (0, 7.5, 0), body, scale=[0.5, 0.45, 0.5])
+    m.box('Brew in the tank', (6, 4, 6), (0, -0.8, 0), tank, colour='FFFF6FB5', glow=True, scale=[1.4, 1.4, 1.4])
+    press = m.box('Press', (4, 2, 4), (0, 3.5, 7), base, texture='minecraft:block/iron_block')
+    m.box('Press arm', (2, 5, 2), (0, 3, -2), press, texture='minecraft:block/iron_block')
+    m.box('Tray', (6, 0.6, 5), (0, 1.8, 5.5), base, colour='FF2A1B33')
+    m.box('Button', (2, 1, 1), (4, -3, 5.1), body, colour='FF8CE07A', glow=True)
+    m.clip('working', 0.8)
+    m.key('working', press, 'pos', 0, 0, 0, 0)
+    m.key('working', press, 'pos', 0.4, 0, -2.2, 0, 'in')
+    m.key('working', tank, 'scale', 0, 1, 1, 1)
+    m.key('working', tank, 'scale', 0.2, 1.06, 0.96, 1.06)
+    m.key('working', tank, 'scale', 0.4, 1, 1, 1)
+    m.key('working', tank, 'scale', 0.6, 1.06, 0.96, 1.06)
+    m.block_info = {'hardness': 2, 'blast': 6, 'light': 6, 'shape': 'parts', 'sound': 'metal', 'screen': 'drink_machine_screen', 'stack': 16}
+    m.write()
+
+
+def cat_lamp():
+    # no clips and no paint: every bit of this goes straight in the chunk, so a house can have hundreds
+    m = Mob('cat_lamp', 'Cat Lamp', 'block')
+    base = m.box('Base', (10, 2, 10), (0, 1, 0), texture='minecraft:block/black_wool')
+    pole = m.box('Pole', (2, 6, 2), (0, 4, 0), base, texture='minecraft:block/black_wool')
+    shade = m.block('Shade', 'minecraft:pearlescent_froglight', (0, 7, 0), pole, scale=[0.62, 0.5, 0.62])
+    m.box('Left ear', (3, 3, 2), (2.8, 9.5, 0), shade, colour='FFFF8FC7', scale=[1.6, 2, 1.6], texture='minecraft:block/pink_wool')
+    m.box('Right ear', (3, 3, 2), (-2.8, 9.5, 0), shade, colour='FFFF8FC7', scale=[1.6, 2, 1.6], texture='minecraft:block/pink_wool')
+    m.block_info = {'hardness': 0.5, 'blast': 1, 'light': 14, 'shape': 'parts', 'sound': 'wool', 'stack': 64}
+    m.write()
+
+
 def main():
     cat('pink_cat', 'Pink Cat', 'pink_wool', 'FFD6559C', 0xFF4DBFA8, 0xFFD6559C, 0xFFF08DBF, 14)
     cat('inky', 'Inky the Black Cat', 'black_wool', 'FFFF8FC7', 0xFFFFE066, 0xFFFF8FC7, 0xFF1A1620, 14)
@@ -360,6 +517,12 @@ def main():
     chicken_cow()
     bone_knight()
     magma_eye()
+    energy_drink()
+    berry_mash()
+    energy_brew()
+    machine_screen()
+    drink_machine()
+    cat_lamp()
     print('starters written to', os.path.normpath(OUT))
 
 

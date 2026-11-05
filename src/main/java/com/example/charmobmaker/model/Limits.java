@@ -26,5 +26,16 @@ public final class Limits {
     public static final float MIN_COOLDOWN = 1f, MAX_COOLDOWN = 300f;
     public static final int MAX_SUMMON = 4;
 
+    public static final int MAX_WIDGETS = 64;
+    public static final int MAX_SLOTS = 27;
+    public static final int MAX_RECIPES = 16;
+    public static final int MAX_INPUTS = 6;
+    public static final int MIN_SCREEN_W = 164, MIN_SCREEN_H = 78, MAX_SCREEN_W = 420, MAX_SCREEN_H = 300;
+    public static final float MAX_RECIPE_SECONDS = 600f;
+    public static final int MAX_EFFECTS = 8;
+    public static final int MAX_LINES = 4;
+    public static final int MAX_EFFECT_LEVEL = 10;
+    public static final float MAX_EFFECT_SECONDS = 3600f;
+
     private Limits() {}
 }

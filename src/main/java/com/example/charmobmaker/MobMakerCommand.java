@@ -1,7 +1,6 @@
 package com.example.charmobmaker;
 
 import com.example.charmobmaker.entity.CustomMob;
-import com.example.charmobmaker.item.MobEggItem;
 import com.example.charmobmaker.model.Design;
 import com.mojang.brigadier.CommandDispatcher;
 import com.mojang.brigadier.arguments.IntegerArgumentType;
@@ -84,6 +83,10 @@ public final class MobMakerCommand {
         if (!allowed(c.getSource())) return refuse(c.getSource());
         Design d = find(c);
         if (d == null) return 0;
+        if (d.type != Design.Type.MOB) {
+            c.getSource().sendFailure(Component.literal(d.name + " is a " + d.type.label.toLowerCase(java.util.Locale.ROOT) + ", not a mob. Try /mobmaker give"));
+            return 0;
+        }
         int n = Math.min(count, Config.MAX_SPAWN_COUNT.get());
         ServerLevel level = c.getSource().getLevel();
         Vec3 at = c.getSource().getPosition();
@@ -97,10 +100,14 @@ public final class MobMakerCommand {
         Design d = find(c);
         if (d == null) return 0;
         ServerPlayer p = c.getSource().getPlayerOrException();
-        ItemStack egg = MobEggItem.of(d);
-        egg.setCount(count);
+        ItemStack egg = DesignStacks.of(d);
+        if (egg.isEmpty()) {
+            c.getSource().sendFailure(Component.literal("A screen isn't something you can carry: a block opens it."));
+            return 0;
+        }
+        egg.setCount(Math.min(count, egg.getMaxStackSize()));
         if (!p.getInventory().add(egg)) p.drop(egg, false);
-        c.getSource().sendSuccess(() -> Component.literal("Gave " + count + " x " + d.name + " Egg"), true);
+        c.getSource().sendSuccess(() -> Component.literal("Gave " + count + " x " + egg.getHoverName().getString()), true);
         return count;
     }
 

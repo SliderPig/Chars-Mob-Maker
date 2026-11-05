@@ -1,5 +1,7 @@
 package com.example.charmobmaker;
 
+import com.example.charmobmaker.block.BlockShapes;
+import com.example.charmobmaker.block.CustomBlockEntity;
 import com.example.charmobmaker.entity.CustomMob;
 import com.example.charmobmaker.model.Design;
 import com.example.charmobmaker.model.DesignJson;
@@ -67,10 +69,15 @@ public final class DesignStore {
         PACKED.clear();
     }
 
-    // The ready-made mobs come along once per world. Delete one and it stays deleted.
+    // The ready-made things come along once per world. Delete one and it stays deleted, and new ones from a later version still arrive.
     private static void addStarters() {
         Path marker = folder.resolve(".starters_added");
-        if (Files.exists(marker)) return;
+        java.util.Set<String> had = new java.util.HashSet<>();
+        try {
+            if (Files.exists(marker)) had.addAll(Files.readAllLines(marker));
+        } catch (IOException ex) {
+            CharMobMaker.LOG.warn("[MobMaker] Can't read {}", marker);
+        }
         var found = server.getResourceManager().listResources("charmobmaker_starters", id -> id.getPath().endsWith(".json"));
         for (Map.Entry<ResourceLocation, net.minecraft.server.packs.resources.Resource> e : found.entrySet()) {
             try (Reader r = e.getValue().openAsReader()) {
@@ -81,6 +88,7 @@ public final class DesignStore {
                 Design d = DesignJson.read(b.toString());
                 DesignRules.tidy(d);
                 if (!Ids.valid(d.id)) d.id = Ids.slug(d.name);
+                if (!had.add(d.id)) continue;
                 Path file = fileOf(d.id);
                 if (file != null && !Files.exists(file)) write(file, DesignJson.write(d));
             } catch (IOException | DesignJson.BadDesign ex) {
@@ -88,7 +96,7 @@ public final class DesignStore {
             }
         }
         try {
-            Files.writeString(marker, "These mobs came with the mod. Delete this file to get any deleted ones back.\n");
+            Files.write(marker, had);
         } catch (IOException ex) {
             CharMobMaker.LOG.warn("[MobMaker] Can't write {}", marker);
         }
@@ -222,6 +230,7 @@ public final class DesignStore {
         if (folder == null) return;
         loadAll();
         if (server == null) return;
+        BlockShapes.clear();
         for (ServerPlayer p : server.getPlayerList().getPlayers()) sendAll(p);
         for (ServerLevel level : server.getAllLevels()) {
             for (var e : level.getAllEntities()) if (e instanceof CustomMob m) m.applyDesign();
@@ -241,6 +250,8 @@ public final class DesignStore {
 
     private static void refreshMobs(String id) {
         if (server == null) return;
+        BlockShapes.forget(id);
+        CustomBlockEntity.refreshAll(false, id);
         for (ServerLevel level : server.getAllLevels()) {
             for (var e : level.getAllEntities()) if (e instanceof CustomMob m && id.equals(m.designId())) m.applyDesign();
         }

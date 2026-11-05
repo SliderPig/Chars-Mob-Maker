@@ -77,8 +77,15 @@ public final class Compiled {
     private final Matrix3f normal = new Matrix3f();
     private final PoseStack liveStack = new PoseStack();
     private float[] bounds;
+    private final boolean leftovers;
 
     public Compiled(Design d) {
+        this(d, false);
+    }
+
+    // leftovers: only what can't be baked into the chunk, for placed blocks that don't move.
+    public Compiled(Design d, boolean leftovers) {
+        this.leftovers = leftovers;
         design = d;
         rig = Rig.of(d);
         out = new PoseOut(rig.size);
@@ -135,11 +142,12 @@ public final class Compiled {
         boolean painted = paint != null && Paints.usesPaint(p);
         TextureAtlasSprite tex = sprite(p.texture);
         Mesh.Builder atlas = new Mesh.Builder(), painting = new Mesh.Builder();
+        boolean inChunk = leftovers && BlockBakes.bakesPart(p);
         for (int face = 0; face < Part.FACES; face++) {
             int cell = painted ? Paints.cellFor(p, face) : -1;
             if (cell >= 0 && cell < paint.cells()) {
                 face(painting, face, x, y, z, paint.u(cell), paint.v(cell), paint.u(cell) + paint.cellSize(), paint.v(cell) + paint.cellSize());
-            } else {
+            } else if (!inChunk) {
                 face(atlas, face, x, y, z, tex.getU0(), tex.getV0(), tex.getU1(), tex.getV1());
             }
         }
@@ -180,6 +188,7 @@ public final class Compiled {
             return;
         }
         box[i] = new float[] {-8, -8, -8, 8, 8, 8};
+        if (leftovers && !b.live()) return; // it's in the chunk
         if (b.live()) {
             BlockState state = b.state();
             live[i] = (ps, buffers, light, overlay, partial, host) -> {
@@ -317,6 +326,12 @@ public final class Compiled {
         if (!any) b = new float[] {-8f, 0f, -8f, 8f, 16f, 8f};
         bounds = b;
         return b;
+    }
+
+    public boolean nothingToDraw() {
+        if (!batches.isEmpty()) return false;
+        for (Live l : live) if (l != null) return false;
+        return true;
     }
 
     public boolean hasMesh(int part) {

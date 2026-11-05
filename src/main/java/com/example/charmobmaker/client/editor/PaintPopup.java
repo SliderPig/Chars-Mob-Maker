@@ -5,12 +5,14 @@ import com.example.charmobmaker.client.ui.Ui;
 import com.example.charmobmaker.model.Limits;
 import com.example.charmobmaker.model.Paints;
 import com.example.charmobmaker.model.Part;
+import com.example.charmobmaker.model.ScreenInfo;
 
 // Painting a box by hand: 16 x 16 cells, one for the whole box or a different one per side. Sits at the side so you can see the mob while you paint.
 final class PaintPopup implements EditorScreen.Popup {
     private static final String[] TOOLS = {"Pen", "Fill", "Eraser"};
     private final EditorScreen s;
     private final Part part;
+    private final ScreenInfo.Widget widget; // painting a picture on a screen rather than a box
     private int tool;
     private int colour = 0xFFFF8FC7;
     private int face = -1; // -1 = every side
@@ -18,9 +20,19 @@ final class PaintPopup implements EditorScreen.Popup {
     private final int[] fresh = new int[256];
     private boolean painting;
 
+    PaintPopup(EditorScreen s, ScreenInfo.Widget widget) {
+        this.s = s;
+        this.widget = widget;
+        this.part = new Part();
+        this.part.name = "a picture";
+        this.cell = widget.paint;
+        java.util.Arrays.fill(fresh, 0);
+    }
+
     PaintPopup(EditorScreen s, Part part) {
         this.s = s;
         this.part = part;
+        this.widget = null;
         if (part.facePaint != null) {
             for (int i = 0; i < Part.FACES && face < 0; i++) {
                 if (part.facePaint[i] >= 0) {
@@ -39,7 +51,7 @@ final class PaintPopup implements EditorScreen.Popup {
         Ui ui = s.ui;
         Draw d = ui.draw;
         EditorState st = s.state;
-        if (st.design.part(part.id) != part) {
+        if (widget == null && st.design.part(part.id) != part) {
             s.popup = null;
             return;
         }
@@ -60,15 +72,17 @@ final class PaintPopup implements EditorScreen.Popup {
         // which side of the box
         float y = y0 + 25f;
         float cw = (w - 16f) / 7f;
-        if (ui.chip("face_all", x0 + 8f, y, cw - 1f, 13f, "All", face < 0)) face = -1;
-        for (int i = 0; i < Part.FACES; i++) {
-            if (ui.chip("face_" + i, x0 + 8f + (i + 1) * cw, y, cw - 1f, 13f, Part.FACE_NAMES[i], face == i)) {
-                face = i;
-                int c = Paints.cellFor(part, i);
-                if (c >= 0) cell = c;
+        if (widget == null) {
+            if (ui.chip("face_all", x0 + 8f, y, cw - 1f, 13f, "All", face < 0)) face = -1;
+            for (int i = 0; i < Part.FACES; i++) {
+                if (ui.chip("face_" + i, x0 + 8f + (i + 1) * cw, y, cw - 1f, 13f, Part.FACE_NAMES[i], face == i)) {
+                    face = i;
+                    int c = Paints.cellFor(part, i);
+                    if (c >= 0) cell = c;
+                }
             }
+            y += 18f;
         }
-        y += 18f;
 
         // the cells
         ui.text("Cells", x0 + 10f, y + 3f, Ui.TEXT_DIM);
@@ -137,7 +151,8 @@ final class PaintPopup implements EditorScreen.Popup {
         for (int i = 0; i < TOOLS.length; i++) {
             if (ui.chip("tool_paint_" + i, x0 + 10f + i * (tw + 2f), y, tw, 13f, TOOLS[i], tool == i)) tool = i;
         }
-        if (ui.button("use_cell", x1 - 112f, y, 102f, 13f, face < 0 ? "Use on all sides" : "Use on this side", false, cell >= 0)) applyToPart(pixels);
+        String useLabel = widget != null ? "Use this painting" : face < 0 ? "Use on all sides" : "Use on this side";
+        if (ui.button("use_cell", x1 - 112f, y, 102f, 13f, useLabel, false, cell >= 0)) applyToPart(pixels);
         y += 18f;
         float dot = 5f, stepD = (w - 24f) / 8f;
         for (int i = 0; i < BuildPanel.SWATCHES.length; i++) {
@@ -171,6 +186,11 @@ final class PaintPopup implements EditorScreen.Popup {
             }
             st.design.paints.add(pixels.clone());
             cell = st.design.paints.size() - 1;
+        }
+        if (widget != null) {
+            widget.paint = cell;
+            st.changed();
+            return;
         }
         if (face < 0) {
             part.paint = cell;

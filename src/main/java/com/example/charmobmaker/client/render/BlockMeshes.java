@@ -16,15 +16,15 @@ import net.minecraft.world.level.block.state.BlockState;
 import net.minecraftforge.client.model.data.ModelData;
 import net.minecraftforge.registries.ForgeRegistries;
 
-import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.concurrent.ConcurrentHashMap;
 
 // Block parts: the block's real model, its quads copied out once per block state. Blocks that draw themselves live (chests, signs) get drawn the usual way each frame.
 public final class BlockMeshes {
     public record Baked(BlockState state, Mesh solid, Mesh translucent, boolean live) {}
 
-    private static final Map<String, Baked> CACHE = new HashMap<>();
+    private static final Map<String, Baked> CACHE = new ConcurrentHashMap<>(); // the chunk builder threads ask too
 
     private BlockMeshes() {}
 
@@ -80,6 +80,7 @@ public final class BlockMeshes {
 
     private static void add(Mesh.Builder into, List<BakedQuad> quads, BlockState state, BlockColors colours) {
         for (BakedQuad q : quads) {
+            into.sprite(q.getSprite());
             int[] v = q.getVertices();
             int stride = v.length / 4;
             int colour = 0;

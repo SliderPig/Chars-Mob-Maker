@@ -4,8 +4,11 @@ import com.example.charmobmaker.CharMobMaker;
 import com.example.charmobmaker.Designs;
 import com.example.charmobmaker.ModContent;
 import com.example.charmobmaker.Net;
+import com.example.charmobmaker.block.BlockShapes;
+import com.example.charmobmaker.block.CustomBlockEntity;
 import com.example.charmobmaker.client.editor.EditorScreen;
 import com.example.charmobmaker.client.editor.EditorState;
+import com.example.charmobmaker.client.render.BlockBakes;
 import com.example.charmobmaker.client.render.RenderCache;
 import com.example.charmobmaker.entity.CustomMob;
 import com.example.charmobmaker.model.Design;
@@ -47,7 +50,7 @@ public final class ClientNet {
             DesignRules.tidy(d);
             d.id = m.id();
             Designs.CLIENT.put(d.id, d);
-            RenderCache.forget(d.id);
+            forgetDrawn(d.id);
             refresh(d.id);
             rebuildTab();
         } catch (DesignJson.BadDesign e) {
@@ -57,7 +60,7 @@ public final class ClientNet {
 
     public static void gone(String id) {
         Designs.CLIENT.remove(id);
-        RenderCache.forget(id);
+        forgetDrawn(id);
         refresh(id);
         rebuildTab();
     }
@@ -65,6 +68,8 @@ public final class ClientNet {
     public static void reset() {
         Designs.CLIENT.clear();
         RenderCache.clear();
+        BlockBakes.clear();
+        BlockShapes.clear();
         INCOMING.clear();
     }
 
@@ -90,6 +95,13 @@ public final class ClientNet {
             if (m.clip().equals("stop")) mob.anim.stop();
             else mob.playClip(m.clip(), false);
         }
+    }
+
+    private static void forgetDrawn(String id) {
+        RenderCache.forget(id);
+        BlockBakes.forget(id);
+        BlockShapes.forget(id);
+        CustomBlockEntity.refreshAll(true, id);
     }
 
     private static void refresh(String id) {

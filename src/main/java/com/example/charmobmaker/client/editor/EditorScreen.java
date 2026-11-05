@@ -6,6 +6,7 @@ import com.example.charmobmaker.client.render.Compiled;
 import com.example.charmobmaker.client.ui.Draw;
 import com.example.charmobmaker.client.ui.Ui;
 import com.example.charmobmaker.model.Clip;
+import com.example.charmobmaker.model.Design;
 import com.example.charmobmaker.model.DesignJson;
 import com.example.charmobmaker.model.DesignRules;
 import com.example.charmobmaker.model.Part;
@@ -28,6 +29,8 @@ public final class EditorScreen extends Screen {
     final BuildPanel build = new BuildPanel(this);
     final StatsPanel stats = new StatsPanel(this);
     final AnimatePanel animate = new AnimatePanel(this);
+    final ThingPanels things = new ThingPanels(this);
+    final ScreenPanel screens = new ScreenPanel(this);
     public Popup popup;
     private boolean aimed;
     private long lastNanos = System.nanoTime();
@@ -64,19 +67,25 @@ public final class EditorScreen extends Screen {
         float freeCx = (leftW + 12f + w - rightW - 12f) / 2f;
         float freeCy = (top + barH + bottom) / 2f + 6f;
         tickPlayback();
-        Compiled c = state.compiled();
-        if (!aimed) {
-            viewport.aimAt(c);
-            aimed = true;
+        Design.Type type = state.design.type;
+        boolean isScreen = type == Design.Type.SCREEN;
+        if (isScreen && state.tab == EditorState.Tab.ANIMATE) state.tab = EditorState.Tab.BUILD;
+        if (!isScreen) {
+            Compiled c = state.compiled();
+            if (!aimed) {
+                viewport.aimAt(c);
+                aimed = true;
+            }
+            viewport.setup(ui, freeCx, freeCy, bottom - top - barH);
+            pose(c);
+            viewport.backdrop(ui);
+            int glow = state.tab == EditorState.Tab.STATS ? -1 : c.rig.indexOf(state.selected);
+            if (glow >= 0 && !c.hasMesh(glow)) glow = -1;
+            viewport.render3D(ui, state, glow);
+            if (type == Design.Type.BLOCK) viewport.blockFrame(ui, state.design, state.tab == EditorState.Tab.STATS);
+            else if (type == Design.Type.MOB && (state.showHitbox || state.tab == EditorState.Tab.STATS)) viewport.hitbox(ui, state.design.stats, 0xB08CF0D8);
+            viewport.selection(ui, state);
         }
-        viewport.setup(ui, freeCx, freeCy, bottom - top - barH);
-        pose(c);
-        viewport.backdrop(ui);
-        int glow = state.tab == EditorState.Tab.STATS ? -1 : c.rig.indexOf(state.selected);
-        if (glow >= 0 && !c.hasMesh(glow)) glow = -1;
-        viewport.render3D(ui, state, glow);
-        if (state.showHitbox || state.tab == EditorState.Tab.STATS) viewport.hitbox(ui, state.design.stats, 0xB08CF0D8);
-        viewport.selection(ui, state);
         ui.flush();
 
         ui.blocked = popup != null;
@@ -84,13 +93,30 @@ public final class EditorScreen extends Screen {
         float panelTop = top + barH + 6f;
         switch (state.tab) {
             case BUILD -> {
-                parts.draw(6f, panelTop, 6f + leftW, h - 6f);
-                build.draw(w - rightW - 6f, panelTop, w - 6f, h - 6f);
-                toolChips(freeCx, panelTop + 2f);
+                if (isScreen) {
+                    screens.drawLayout(6f, panelTop, 6f + leftW, h - 6f, w - rightW - 6f, w - 6f);
+                } else {
+                    parts.draw(6f, panelTop, 6f + leftW, h - 6f);
+                    build.draw(w - rightW - 6f, panelTop, w - 6f, h - 6f);
+                    toolChips(freeCx, panelTop + 2f);
+                }
             }
             case STATS -> {
-                stats.drawLeft(6f, panelTop, 6f + leftW, h - 6f);
-                stats.drawRight(w - rightW - 6f, panelTop, w - 6f, h - 6f);
+                switch (type) {
+                    case MOB -> {
+                        stats.drawLeft(6f, panelTop, 6f + leftW, h - 6f);
+                        stats.drawRight(w - rightW - 6f, panelTop, w - 6f, h - 6f);
+                    }
+                    case BLOCK -> {
+                        parts.draw(6f, panelTop, 6f + leftW, h - 6f);
+                        things.drawBlock(w - rightW - 6f, panelTop, w - 6f, h - 6f);
+                    }
+                    case ITEM -> {
+                        parts.draw(6f, panelTop, 6f + leftW, h - 6f);
+                        things.drawItem(w - rightW - 6f, panelTop, w - 6f, h - 6f);
+                    }
+                    case SCREEN -> screens.drawRecipes(6f, panelTop, w - 6f, h - 6f);
+                }
             }
             case ANIMATE -> {
                 parts.draw(6f, panelTop, 6f + leftW, bottom - 5f);
@@ -99,14 +125,14 @@ public final class EditorScreen extends Screen {
                 toolChips(freeCx, panelTop + 2f);
             }
         }
-        viewChips(freeCx, bottom);
+        if (!isScreen) viewChips(freeCx, bottom);
         ui.flush();
         ui.blocked = false;
         if (popup != null) {
             popup.draw(this);
             ui.flush();
         }
-        viewport.input(ui, state);
+        if (!isScreen) viewport.input(ui, state);
         drawToast();
         ui.end();
         if (!ui.mouseIsDown() && !ui.typing()) state.commit();
@@ -174,12 +200,20 @@ public final class EditorScreen extends Screen {
 
         // Build / Stats / Animate
         float tabW = w < 720f ? 48f : 56f;
-        float tabsX = (leftW + 12f + w - rightW - 12f) / 2f - tabW * 1.5f - 4f;
-        ui.panel(tabsX, y, tabsX + tabW * 3f + 8f, y + h, h / 2f);
-        String[] names = {"Build", "Stats", "Animate"};
+        Design.Type type = state.design.type;
+        String[] names = switch (type) {
+            case MOB -> new String[] {"Build", "Stats", "Animate"};
+            case BLOCK -> new String[] {"Build", "Block", "Animate"};
+            case ITEM -> new String[] {"Build", "Item", "Animate"};
+            case SCREEN -> new String[] {"Layout", "Steps"};
+        };
+        String[] ids = {"build", "stats", "animate"};
+        float tabsWidth = tabW * names.length + 8f;
+        float tabsX = (leftW + 12f + w - rightW - 12f) / 2f - tabsWidth / 2f;
+        ui.panel(tabsX, y, tabsX + tabsWidth, y + h, h / 2f);
         EditorState.Tab[] tabs = EditorState.Tab.values();
-        for (int i = 0; i < 3; i++) {
-            if (ui.chip("tab_" + names[i].toLowerCase(), tabsX + 4f + i * tabW, y + 3f, tabW, h - 6f, names[i], state.tab == tabs[i])) {
+        for (int i = 0; i < names.length; i++) {
+            if (ui.chip("tab_" + ids[i], tabsX + 4f + i * tabW, y + 3f, tabW, h - 6f, names[i], state.tab == tabs[i])) {
                 state.commit();
                 state.tab = tabs[i];
                 state.playing = false;
@@ -190,7 +224,7 @@ public final class EditorScreen extends Screen {
         float gap = 3f, bh = h - 6f, pad = 4f;
         float x = w - 6f;
         // narrow windows squeeze these rather than running into the tabs
-        float room = x - (tabsX + tabW * 3f + 8f) - 4f;
+        float room = x - (tabsX + tabsWidth) - 4f;
         float bw = Math.max(26f, Math.min(38f, (room - 22f - pad * 2f - gap * 6f) / 6f));
         float width = 6f * (bw + gap) + 22f + pad * 2f;
         ui.panel(x - width, y, x, y + h, h / 2f);
@@ -204,12 +238,11 @@ public final class EditorScreen extends Screen {
         if (ui.accent("save", bx, y + 3f, bw, bh, "Save")) state.save();
         bx += bw + gap;
         boolean known = !state.design.id.isEmpty() && Designs.CLIENT.containsKey(state.design.id);
-        if (ui.button("spawn", bx, y + 3f, bw, bh, "Spawn", false, known)) Net.action(Net.Act.SPAWN, state.design.id, 1);
-        if (ui.over(bx, y + 3f, bx + bw, y + 3f + bh)) ui.tooltip("Puts one in the world next to you");
-        else if (!known && ui.mx >= bx && ui.mx < bx + bw && ui.my >= y && ui.my < y + h && !ui.blocked) ui.tooltip("Save the mob first");
+        if (ui.button("spawn", bx, y + 3f, bw, bh, "Spawn", false, known && type == Design.Type.MOB)) Net.action(Net.Act.SPAWN, state.design.id, 1);
+        if (ui.over(bx, y + 3f, bx + bw, y + 3f + bh)) ui.tooltip(type == Design.Type.MOB ? (known ? "Puts one in the world next to you" : "Save the mob first") : "Only mobs spawn. Use Give.");
         bx += bw + gap;
-        if (ui.button("egg", bx, y + 3f, bw, bh, "Egg", false, known)) Net.action(Net.Act.EGG, state.design.id, 1);
-        if (ui.over(bx, y + 3f, bx + bw, y + 3f + bh)) ui.tooltip("Gives you a spawn egg of this mob");
+        if (ui.button("egg", bx, y + 3f, bw, bh, type == Design.Type.MOB ? "Egg" : "Give", false, known && type != Design.Type.SCREEN)) Net.action(Net.Act.EGG, state.design.id, 1);
+        if (ui.over(bx, y + 3f, bx + bw, y + 3f + bh)) ui.tooltip(known ? (type == Design.Type.MOB ? "Gives you a spawn egg of this mob" : "Puts one in your bag") : "Save it first");
         bx += bw + gap;
         if (ui.button("close", bx, y + 3f, 22f, bh, "X")) onClose();
     }
@@ -228,14 +261,15 @@ public final class EditorScreen extends Screen {
     }
 
     private void viewChips(float cx, float bottom) {
-        float cw = 40f, ch = 13f, n = 5f;
+        boolean mob = state.design.type == Design.Type.MOB;
+        float cw = 40f, ch = 13f, n = mob ? 5f : 4f;
         float x = cx - cw * n / 2f - 3f, y = bottom - ch - 12f;
         ui.panel(x, y - 3f, x + cw * n + 6f, y + ch + 3f, (ch + 6f) / 2f);
         if (ui.chip("view_front", x + 3f, y, cw, ch, "Front", false)) viewport.view(0f, 8f);
         if (ui.chip("view_side", x + 3f + cw, y, cw, ch, "Side", false)) viewport.view(-90f, 8f);
         if (ui.chip("view_top", x + 3f + cw * 2f, y, cw, ch, "Top", false)) viewport.view(0f, 80f);
         if (ui.chip("view_fit", x + 3f + cw * 3f, y, cw, ch, "Fit", false)) viewport.aimAt(state.compiled());
-        if (ui.chip("view_box", x + 3f + cw * 4f, y, cw, ch, "Hitbox", state.showHitbox)) state.showHitbox = !state.showHitbox;
+        if (mob && ui.chip("view_box", x + 3f + cw * 4f, y, cw, ch, "Hitbox", state.showHitbox)) state.showHitbox = !state.showHitbox;
     }
 
     private void drawToast() {
@@ -335,7 +369,8 @@ public final class EditorScreen extends Screen {
             return true;
         }
         if (key == GLFW.GLFW_KEY_DELETE) {
-            if (state.tab == EditorState.Tab.ANIMATE && state.key != null) animate.deleteKey();
+            if (state.design.type == Design.Type.SCREEN) screens.delete();
+            else if (state.tab == EditorState.Tab.ANIMATE && state.key != null) animate.deleteKey();
             else parts.delete();
             return true;
         }

@@ -25,6 +25,92 @@ public final class DesignRules {
         tidyParts(d);
         tidyClips(d);
         tidyStats(d.stats);
+        tidyBlock(d);
+        tidyItem(d.item);
+        tidyScreen(d);
+        if (d.type == null) d.type = Design.Type.MOB;
+        if (d.type == Design.Type.SCREEN) {
+            d.parts.clear();
+            d.clips.clear();
+        }
+    }
+
+    private static void tidyBlock(Design d) {
+        BlockInfo b = d.block;
+        b.hardness = range(b.hardness, 0f, 100f, 1.5f);
+        b.blast = range(b.blast, 0f, 1200f, 6f);
+        b.light = Math.max(0, Math.min(15, b.light));
+        if (b.shape == null) b.shape = BlockInfo.Shape.PARTS;
+        boolean known = false;
+        for (String s : BlockInfo.SOUNDS) known |= s.equals(b.sound);
+        if (!known) b.sound = "stone";
+        if (!b.screen.isEmpty() && !Ids.valid(b.screen)) b.screen = "";
+        b.stack = Math.max(1, Math.min(64, b.stack));
+    }
+
+    private static void tidyItem(ItemInfo i) {
+        i.stack = Math.max(1, Math.min(64, i.stack));
+        if (i.use == null) i.use = ItemInfo.Use.DRINK;
+        i.useSeconds = range(i.useSeconds, 0.1f, 30f, 1.6f);
+        i.cooldown = range(i.cooldown, 0f, 3600f, 0f);
+        if (!i.returns.isEmpty() && !ItemRef.valid(i.returns)) i.returns = "";
+        i.heal = range(i.heal, 0f, 200f, 0f);
+        i.food = Math.max(0, Math.min(40, i.food));
+        i.saturation = range(i.saturation, 0f, 2f, 0.3f);
+        i.launch = range(i.launch, 0f, 4f, 0f);
+        i.xp = Math.max(0, Math.min(Limits.MAX_XP, i.xp));
+        i.sound = sound(i.sound);
+        i.particle = sound(i.particle);
+        i.particleCount = Math.max(0, Math.min(64, i.particleCount));
+        i.effects.removeIf(e -> !Ids.resource(e.id));
+        while (i.effects.size() > Limits.MAX_EFFECTS) i.effects.remove(i.effects.size() - 1);
+        for (ItemInfo.Effect e : i.effects) {
+            e.level = Math.max(1, Math.min(Limits.MAX_EFFECT_LEVEL, e.level));
+            e.seconds = range(e.seconds, 0.05f, Limits.MAX_EFFECT_SECONDS, 30f);
+        }
+        while (i.lines.size() > Limits.MAX_LINES) i.lines.remove(i.lines.size() - 1);
+        i.lines.replaceAll(l -> cleanName(l, 60, ""));
+        i.handScale = range(i.handScale, 0.1f, 4f, 1f);
+    }
+
+    private static void tidyScreen(Design d) {
+        ScreenInfo s = d.screen;
+        s.width = Math.max(Limits.MIN_SCREEN_W, Math.min(Limits.MAX_SCREEN_W, s.width));
+        s.height = Math.max(Limits.MIN_SCREEN_H, Math.min(Limits.MAX_SCREEN_H, s.height));
+        s.invX = Math.max(0, Math.min(s.width - 162, s.invX));
+        s.invY = Math.max(0, Math.min(s.height - 76, s.invY));
+        while (s.widgets.size() > Limits.MAX_WIDGETS) s.widgets.remove(s.widgets.size() - 1);
+        int slots = 0;
+        for (Iterator<ScreenInfo.Widget> it = s.widgets.iterator(); it.hasNext(); ) {
+            ScreenInfo.Widget w = it.next();
+            if (w.kind == null) w.kind = ScreenInfo.Widget.Kind.PANEL;
+            if (w.kind == ScreenInfo.Widget.Kind.SLOT) {
+                if (++slots > Limits.MAX_SLOTS) {
+                    it.remove();
+                    continue;
+                }
+                w.w = 18;
+                w.h = 18;
+            }
+            w.w = Math.max(1, Math.min(s.width, w.w));
+            w.h = Math.max(1, Math.min(s.height, w.h));
+            w.x = Math.max(0, Math.min(s.width - Math.min(w.w, s.width), w.x));
+            w.y = Math.max(0, Math.min(s.height - Math.min(w.h, s.height), w.y));
+            w.text = cleanName(w.text, 80, "");
+            if (w.action < ScreenInfo.Widget.ACTION_STOP || w.action >= Limits.MAX_RECIPES) w.action = ScreenInfo.Widget.ACTION_START;
+            if (!w.item.isEmpty() && !ItemRef.valid(w.item)) w.item = "";
+            if (w.paint >= d.paints.size() || w.paint < -1) w.paint = -1;
+        }
+        while (s.recipes.size() > Limits.MAX_RECIPES) s.recipes.remove(s.recipes.size() - 1);
+        for (ScreenInfo.Recipe r : s.recipes) {
+            r.name = cleanName(r.name, 24, "Step");
+            r.inputs.removeIf(i -> !ItemRef.valid(i.item));
+            while (r.inputs.size() > Limits.MAX_INPUTS) r.inputs.remove(r.inputs.size() - 1);
+            for (ScreenInfo.Ingredient i : r.inputs) i.count = Math.max(1, Math.min(64, i.count));
+            if (!ItemRef.valid(r.output)) r.output = "minecraft:air";
+            r.outputCount = Math.max(1, Math.min(64, r.outputCount));
+            r.seconds = range(r.seconds, 0.05f, Limits.MAX_RECIPE_SECONDS, 3f);
+        }
     }
 
     public static String cleanName(String s, int max, String fallback) {

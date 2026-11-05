@@ -49,6 +49,46 @@ final class PickerPopup implements EditorScreen.Popup {
         return new PickerPopup(s, "Choose an item", rows, pick, false);
     }
 
+    // Anything that can go in a slot: things made here first, then every item in the game.
+    static PickerPopup itemRefs(EditorScreen s, Consumer<String> pick) {
+        List<Row> rows = new ArrayList<>();
+        List<com.example.charmobmaker.model.Design> made = new ArrayList<>(com.example.charmobmaker.Designs.CLIENT.values());
+        made.sort((a, b) -> a.name.compareToIgnoreCase(b.name));
+        for (var d : made) {
+            if (d.type == com.example.charmobmaker.model.Design.Type.ITEM || d.type == com.example.charmobmaker.model.Design.Type.BLOCK) {
+                rows.add(new Row(com.example.charmobmaker.model.ItemRef.ofDesign(d.id), d.name + " (made here)", com.example.charmobmaker.DesignStacks.of(d)));
+            }
+        }
+        for (var i : AddPartPopup.items()) rows.add(new Row(i.id(), i.name(), i.stack()));
+        return new PickerPopup(s, "Choose an item", rows, pick, false);
+    }
+
+    static PickerPopup screens(EditorScreen s, Consumer<String> pick) {
+        List<Row> rows = new ArrayList<>();
+        rows.add(new Row("", "No screen, just a block", ItemStack.EMPTY));
+        List<com.example.charmobmaker.model.Design> made = new ArrayList<>(com.example.charmobmaker.Designs.CLIENT.values());
+        made.sort((a, b) -> a.name.compareToIgnoreCase(b.name));
+        for (var d : made) if (d.type == com.example.charmobmaker.model.Design.Type.SCREEN) rows.add(new Row(d.id, d.name, ItemStack.EMPTY));
+        return new PickerPopup(s, "Which screen does it open?", rows, pick, false);
+    }
+
+    static PickerPopup effects(EditorScreen s, Consumer<String> pick) {
+        List<Row> rows = new ArrayList<>();
+        for (var e : ForgeRegistries.MOB_EFFECTS.getEntries()) rows.add(new Row(e.getKey().location().toString(), e.getValue().getDisplayName().getString(), ItemStack.EMPTY));
+        rows.sort((a, b) -> a.label().compareToIgnoreCase(b.label()));
+        return new PickerPopup(s, "Choose an effect", rows, pick, false);
+    }
+
+    static PickerPopup particles(EditorScreen s, Consumer<String> pick) {
+        List<Row> rows = new ArrayList<>();
+        rows.add(new Row("", "None", ItemStack.EMPTY));
+        for (var e : ForgeRegistries.PARTICLE_TYPES.getEntries()) {
+            if (e.getValue() instanceof net.minecraft.core.particles.SimpleParticleType) rows.add(new Row(e.getKey().location().toString(), e.getKey().location().getPath().replace('_', ' '), ItemStack.EMPTY));
+        }
+        rows.sort((a, b) -> a.label().compareToIgnoreCase(b.label()));
+        return new PickerPopup(s, "Choose particles", rows, pick, false);
+    }
+
     static PickerPopup blockTextures(EditorScreen s, Consumer<String> pick) {
         List<Row> rows = new ArrayList<>();
         Set<String> seen = new HashSet<>();

@@ -2,7 +2,6 @@ package com.example.charmobmaker;
 
 import com.example.charmobmaker.client.ClientNet;
 import com.example.charmobmaker.entity.CustomMob;
-import com.example.charmobmaker.item.MobEggItem;
 import com.example.charmobmaker.model.Design;
 import com.example.charmobmaker.model.Ids;
 import com.example.charmobmaker.model.Limits;
@@ -273,15 +272,23 @@ public final class Net {
                 }
             }
             case SPAWN -> {
+                if (d.type != Design.Type.MOB) {
+                    reply(p, false, m.id(), "Only mobs can be spawned.");
+                    return;
+                }
                 int n = Math.max(1, Math.min(Config.MAX_SPAWN_COUNT.get(), m.count()));
                 for (int i = 0; i < n; i++) CustomMob.spawnNear(p.serverLevel(), p.position(), m.id(), 2.0 + i * 0.3);
                 reply(p, true, m.id(), n == 1 ? "Spawned " + d.name : "Spawned " + n + " x " + d.name);
             }
             case EGG -> {
-                ItemStack egg = MobEggItem.of(d);
-                egg.setCount(Math.max(1, Math.min(64, m.count())));
+                ItemStack egg = DesignStacks.of(d);
+                if (egg.isEmpty()) {
+                    reply(p, false, m.id(), "A screen isn't something you can carry: a block opens it.");
+                    return;
+                }
+                egg.setCount(Math.max(1, Math.min(egg.getMaxStackSize(), m.count())));
                 if (!p.getInventory().add(egg)) p.drop(egg, false);
-                reply(p, true, m.id(), "An egg for " + d.name + " is in your bag");
+                reply(p, true, m.id(), d.type == Design.Type.MOB ? "An egg for " + d.name + " is in your bag" : d.name + " is in your bag");
             }
             default -> {
             }

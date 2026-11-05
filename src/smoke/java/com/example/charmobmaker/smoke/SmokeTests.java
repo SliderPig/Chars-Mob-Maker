@@ -1,8 +1,12 @@
 package com.example.charmobmaker.smoke;
 
 import com.example.charmobmaker.CharMobMaker;
+import com.example.charmobmaker.DesignStacks;
 import com.example.charmobmaker.DesignStore;
 import com.example.charmobmaker.Designs;
+import com.example.charmobmaker.ModContent;
+import com.example.charmobmaker.block.CustomBlock;
+import com.example.charmobmaker.block.CustomBlockEntity;
 import com.example.charmobmaker.entity.CustomMob;
 import com.example.charmobmaker.item.MobEggItem;
 import com.example.charmobmaker.model.Design;
@@ -59,7 +63,7 @@ public final class SmokeTests {
     @GameTest(template = "empty")
     public static void startersAreThere(GameTestHelper h) {
         h.succeedWhen(() -> {
-            for (String id : new String[] {"pink_cat", "inky", "block_golem", "chicken_headed_cow", "bone_knight", "magma_eye"}) {
+            for (String id : new String[] {"pink_cat", "inky", "block_golem", "chicken_headed_cow", "bone_knight", "magma_eye", "energy_drink", "berry_mash", "energy_brew", "drink_machine", "drink_machine_screen", "cat_lamp"}) {
                 h.assertTrue(Designs.SERVER.containsKey(id), "missing starter " + id);
             }
         });
@@ -229,6 +233,111 @@ public final class SmokeTests {
             again.id = d.id;
             h.assertTrue(before.equals(DesignJson.write(again)), "design " + d.id + " changed when tidied again");
         }
+        h.succeed();
+    }
+
+    private static BlockPos placeMade(GameTestHelper h, String id, BlockPos rel) {
+        BlockPos at = h.absolutePos(rel);
+        Design d = Designs.SERVER.get(id);
+        h.getLevel().setBlock(at, CustomBlock.stateFor(ModContent.CUSTOM_BLOCK.get().defaultBlockState(), d), 3);
+        ((CustomBlockEntity) h.getLevel().getBlockEntity(at)).setDesign(id);
+        return at;
+    }
+
+    @GameTest(template = "empty")
+    public static void madeBlocksTakeTheirShapeFromTheDesign(GameTestHelper h) {
+        BlockPos lamp = placeMade(h, "cat_lamp", new BlockPos(3, 2, 3));
+        var level = h.getLevel();
+        var shape = level.getBlockState(lamp).getCollisionShape(level, lamp);
+        h.assertFalse(shape.isEmpty(), "the lamp should have a solid shape");
+        h.assertTrue(shape.bounds().maxX - shape.bounds().minX < 1.0, "the lamp's base isn't a whole block wide: " + shape.bounds());
+        h.assertTrue(level.getBlockState(lamp).getValue(CustomBlock.LIGHT) == 14, "the lamp should glow");
+        h.assertFalse(level.getBlockState(lamp).getValue(CustomBlock.MACHINE), "the lamp isn't a machine");
+        BlockPos machine = placeMade(h, "drink_machine", new BlockPos(6, 2, 3));
+        h.assertTrue(level.getBlockState(machine).getValue(CustomBlock.MACHINE), "the machine is a machine");
+        h.assertTrue(((CustomBlockEntity) level.getBlockEntity(machine)).screenDesign() != null, "the machine has its screen");
+        h.succeed();
+    }
+
+    @GameTest(template = "empty")
+    public static void breakingAMadeBlockDropsItAndItsContents(GameTestHelper h) {
+        BlockPos at = placeMade(h, "drink_machine", new BlockPos(4, 2, 4));
+        CustomBlockEntity be = (CustomBlockEntity) h.getLevel().getBlockEntity(at);
+        be.items().setStackInSlot(0, new ItemStack(net.minecraft.world.item.Items.SUGAR, 5));
+        h.getLevel().destroyBlock(at, true);
+        var dropped = h.getLevel().getEntitiesOfClass(ItemEntity.class, new net.minecraft.world.phys.AABB(at).inflate(2.0));
+        boolean sugar = dropped.stream().anyMatch(e -> e.getItem().is(net.minecraft.world.item.Items.SUGAR) && e.getItem().getCount() == 5);
+        boolean self = dropped.stream().anyMatch(e -> e.getItem().is(ModContent.CUSTOM_BLOCK_ITEM.get()) && "drink_machine".equals(DesignStacks.idOf(e.getItem())));
+        h.assertTrue(sugar, "the things inside should drop");
+        h.assertTrue(self, "the block itself should drop, still knowing what it is");
+        h.succeed();
+    }
+
+    @GameTest(template = "empty", timeoutTicks = 500)
+    public static void theDrinkMachineMakesADrinkInThreeSteps(GameTestHelper h) {
+        BlockPos at = placeMade(h, "drink_machine", new BlockPos(4, 2, 4));
+        CustomBlockEntity be = (CustomBlockEntity) h.getLevel().getBlockEntity(at);
+        Design screen = be.screenDesign();
+        h.assertTrue(screen != null && screen.screen.recipes.size() == 3, "three steps");
+        var items = be.items();
+        items.setStackInSlot(0, new ItemStack(net.minecraft.world.item.Items.SWEET_BERRIES, 2));
+        items.setStackInSlot(1, new ItemStack(net.minecraft.world.item.Items.SUGAR, 1));
+        h.assertFalse(be.start(2), "the can step has nothing to work with yet");
+        h.assertTrue(be.start(-1), "the mash step should start");
+        h.assertTrue(be.running(), "it should be running");
+        int[] phase = {0};
+        h.onEachTick(() -> {
+            if (be.running()) return;
+            if (phase[0] == 0) {
+                h.assertTrue("design:berry_mash".equals(DesignStacks.refOf(items.getStackInSlot(2))), "mash should be in the output slot");
+                h.assertTrue(items.getStackInSlot(0).isEmpty() && items.getStackInSlot(1).isEmpty(), "the inputs should be used up");
+                items.setStackInSlot(0, new ItemStack(net.minecraft.world.item.Items.GLOWSTONE_DUST, 1));
+                h.assertTrue(be.start(-1), "the brew step should start with the mash still in the output slot");
+                phase[0] = 1;
+            } else if (phase[0] == 1) {
+                h.assertTrue("design:energy_brew".equals(DesignStacks.refOf(items.getStackInSlot(2))), "brew should have taken the mash's place");
+                items.setStackInSlot(1, new ItemStack(net.minecraft.world.item.Items.IRON_NUGGET, 1));
+                h.assertTrue(be.start(-1), "the can step should start");
+                phase[0] = 2;
+            } else if (phase[0] == 2) {
+                h.assertTrue("design:energy_drink".equals(DesignStacks.refOf(items.getStackInSlot(2))), "out comes a drink");
+                phase[0] = 3;
+                h.succeed();
+            }
+        });
+    }
+
+    @GameTest(template = "empty", timeoutTicks = 200)
+    public static void takingAnIngredientAwayStopsTheStep(GameTestHelper h) {
+        BlockPos at = placeMade(h, "drink_machine", new BlockPos(4, 2, 4));
+        CustomBlockEntity be = (CustomBlockEntity) h.getLevel().getBlockEntity(at);
+        be.items().setStackInSlot(0, new ItemStack(net.minecraft.world.item.Items.SWEET_BERRIES, 2));
+        be.items().setStackInSlot(1, new ItemStack(net.minecraft.world.item.Items.SUGAR, 1));
+        h.assertTrue(be.start(0), "it should start");
+        h.runAfterDelay(5, () -> be.items().setStackInSlot(1, ItemStack.EMPTY));
+        h.runAfterDelay(15, () -> {
+            h.assertFalse(be.running(), "it should have stopped");
+            h.assertTrue(be.items().getStackInSlot(2).isEmpty(), "nothing should come out for free");
+            h.assertTrue(be.items().getStackInSlot(0).getCount() == 2, "what's left stays");
+            h.succeed();
+        });
+    }
+
+    @GameTest(template = "empty")
+    public static void drinkingDoesWhatTheDesignSays(GameTestHelper h) {
+        var player = h.makeMockPlayer();
+        player.getAbilities().instabuild = false;
+        ItemStack can = DesignStacks.of(Designs.SERVER.get("energy_drink"));
+        player.setItemInHand(InteractionHand.MAIN_HAND, can);
+        h.assertTrue(can.getUseAnimation() == net.minecraft.world.item.UseAnim.DRINK, "it should be drunk");
+        h.assertTrue(can.getUseDuration() == 32, "drinking takes 1.6 seconds, got " + can.getUseDuration());
+        h.assertTrue(can.getMaxStackSize() == 16, "stack size from the design");
+        ItemStack after = can.finishUsingItem(h.getLevel(), player);
+        h.assertTrue(player.hasEffect(net.minecraft.world.effect.MobEffects.MOVEMENT_SPEED), "speed");
+        h.assertTrue(player.getEffect(net.minecraft.world.effect.MobEffects.MOVEMENT_SPEED).getAmplifier() == 1, "speed II");
+        h.assertTrue(player.hasEffect(net.minecraft.world.effect.MobEffects.DIG_SPEED), "haste");
+        h.assertTrue(player.hasEffect(net.minecraft.world.effect.MobEffects.JUMP), "jump");
+        h.assertTrue(after.is(net.minecraft.world.item.Items.IRON_NUGGET), "the crushed can comes back, got " + after);
         h.succeed();
     }
 

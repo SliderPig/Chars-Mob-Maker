@@ -8,6 +8,7 @@ import com.example.charmobmaker.client.ui.Ui;
 import com.example.charmobmaker.model.Design;
 import com.example.charmobmaker.model.DesignJson;
 import com.example.charmobmaker.model.DesignRules;
+import com.example.charmobmaker.model.Part;
 import net.minecraft.client.Minecraft;
 
 import java.io.IOException;
@@ -19,6 +20,7 @@ import java.util.List;
 final class LoadPopup implements EditorScreen.Popup {
     private final EditorScreen s;
     private String armed = "";
+    private int filter = -1;
     private List<Path> files;
 
     LoadPopup(EditorScreen s) {
@@ -42,30 +44,41 @@ final class LoadPopup implements EditorScreen.Popup {
             return;
         }
 
-        // starting something and sharing
-        float bx = x0 + 44f, bh = 14f, by = y0 + 6f;
-        float bw = textButton(bx, "New");
-        if (ui.accent("new_mob", bx, by, bw, bh, "New")) {
-            st.commit();
-            st.load(new Design());
-            s.viewport.aimAt(st.compiled());
-            s.popup = null;
-            return;
+        // starting something new
+        float bx = x0 + 42f, bh = 14f, by = y0 + 6f;
+        Design.Type[] types = Design.Type.values();
+        ui.text("New:", bx, by + 3f, Ui.TEXT_DIM);
+        bx += 24f;
+        for (Design.Type t : types) {
+            float bw = textButton(bx, t.label);
+            if (ui.accent("new_" + t.name().toLowerCase(), bx, by, bw, bh, t.label)) {
+                st.commit();
+                st.load(blank(t));
+                st.tab = EditorState.Tab.BUILD;
+                if (t != Design.Type.SCREEN) s.viewport.aimAt(st.compiled());
+                s.popup = null;
+                return;
+            }
+            bx += bw + 2f;
         }
-        bx += bw + 2f;
-        bw = textButton(bx, "Save a copy");
-        if (ui.button("copy_mob", bx, by, bw, bh, "Save a copy")) {
-            Design copy = st.design.copy();
-            copy.id = "";
-            copy.owner = "";
-            copy.name = DesignRules.cleanName(copy.name + " copy", 32, "Copy");
-            st.load(copy);
-            s.popup = null;
-            return;
-        }
-        bx += bw + 2f;
-        bw = textButton(bx, "To a file");
-        if (ui.button("export_mob", bx, by, bw, bh, "To a file")) {
+        // sharing, along the bottom of the top row
+        float rx = x1 - 30f;
+        rx = share(rx, by, bh, "paste_text", "Paste", "Makes a mob from text someone sent you", () -> {
+            try {
+                Design d = DesignJson.read(Minecraft.getInstance().keyboardHandler.getClipboard());
+                DesignRules.tidy(d);
+                d.id = "";
+                d.owner = "";
+                st.load(d);
+                if (d.type != Design.Type.SCREEN) s.viewport.aimAt(st.compiled());
+                s.popup = null;
+                st.say("Pasted " + d.name + ". Save it to keep it.", false);
+            } catch (DesignJson.BadDesign e) {
+                st.say("That text isn't one of these", true);
+            }
+        });
+        rx = share(rx, by, bh, "copy_text", "Copy", "Copies this one as text, to send to someone", s::copyToClipboard);
+        rx = share(rx, by, bh, "export_mob", "To a file", "Saves this one as a file on this PC", () -> {
             try {
                 Path p = DesignFiles.export(st.design);
                 st.say("Saved as " + p.getFileName(), false);
@@ -73,28 +86,16 @@ final class LoadPopup implements EditorScreen.Popup {
             } catch (IOException e) {
                 st.say("Couldn't write the file", true);
             }
-        }
-        bx += bw + 2f;
-        bw = textButton(bx, "Copy text");
-        if (ui.button("copy_text", bx, by, bw, bh, "Copy text")) s.copyToClipboard();
-        if (ui.over(bx, by, bx + bw, by + bh)) ui.tooltip("Copies the mob as text, to send to someone");
-        bx += bw + 2f;
-        bw = textButton(bx, "Paste text");
-        if (ui.button("paste_text", bx, by, bw, bh, "Paste text")) {
-            try {
-                Design d = DesignJson.read(Minecraft.getInstance().keyboardHandler.getClipboard());
-                DesignRules.tidy(d);
-                d.id = "";
-                d.owner = "";
-                st.load(d);
-                s.viewport.aimAt(st.compiled());
-                s.popup = null;
-                st.say("Pasted " + d.name + ". Save it to keep it.", false);
-                return;
-            } catch (DesignJson.BadDesign e) {
-                st.say("That text isn't a mob", true);
-            }
-        }
+        });
+        rx = share(rx, by, bh, "copy_mob", "Save a copy", "Starts a copy of this one under a new name", () -> {
+            Design copy = st.design.copy();
+            copy.id = "";
+            copy.owner = "";
+            copy.name = DesignRules.cleanName(copy.name + " copy", 32, "Copy");
+            st.load(copy);
+            s.popup = null;
+        });
+        if (s.popup != this) return;
 
         float colW = (w - 22f) * 0.62f;
         float top = y0 + 26f, bottom = y1 - 8f;
@@ -105,6 +106,49 @@ final class LoadPopup implements EditorScreen.Popup {
         ui.wheel = 0f;
     }
 
+    private float share(float right, float y, float h, String id, String label, String tip, Runnable what) {
+        Ui ui = s.ui;
+        float bw = ui.width(label) + 12f;
+        float x = right - bw;
+        if (ui.button(id, x, y, bw, h, label)) what.run();
+        if (ui.over(x, y, right, y + h)) ui.tooltip(tip);
+        return x - 2f;
+    }
+
+    private static Design blank(Design.Type type) {
+        Design d = new Design();
+        d.type = type;
+        switch (type) {
+            case BLOCK -> {
+                d.name = "New Block";
+                Part p = new Part();
+                p.id = "p1";
+                p.name = "Box";
+                p.pos = new float[] {0, 8, 0};
+                p.size = new float[] {16, 16, 16};
+                p.color = 0xFFFF8FC7;
+                d.parts.add(p);
+            }
+            case ITEM -> {
+                d.name = "New Item";
+                Part p = new Part();
+                p.id = "p1";
+                p.name = "Box";
+                p.pos = new float[] {0, 5, 0};
+                p.size = new float[] {6, 10, 6};
+                p.color = 0xFFFF8FC7;
+                d.parts.add(p);
+            }
+            case SCREEN -> {
+                d.name = "New Screen";
+                d.screen.addDefaults();
+            }
+            default -> {
+            }
+        }
+        return d;
+    }
+
     private float textButton(float x, String label) {
         return s.ui.width(label) + 12f;
     }
@@ -112,10 +156,14 @@ final class LoadPopup implements EditorScreen.Popup {
     private void worldList(float x0, float y0, float x1, float y1) {
         Ui ui = s.ui;
         EditorState st = s.state;
-        ui.text("In this world", x0 + 3f, y0 + 1f, Ui.PINK_SOFT);
-        float top = y0 + 12f;
+        // show just one kind, or all of them
+        String[] filters = {"All", "Mobs", "Blocks", "Items", "Screens"};
+        int picked = ui.chips("filter", x0, y0, x1 - x0, 13f, filters, filter + 1);
+        if (picked >= 0) filter = picked - 1;
+        float top = y0 + 15f;
         ui.well(x0, top, x1, y1, 7f);
-        List<Design> list = new ArrayList<>(Designs.CLIENT.values());
+        List<Design> list = new ArrayList<>();
+        for (Design d : Designs.CLIENT.values()) if (filter < 0 || d.type.ordinal() == filter) list.add(d);
         list.sort((a, b) -> a.name.compareToIgnoreCase(b.name));
         float rowH = 34f;
         float scroll = ui.scroll("load_world", x0, top, x1, y1, list.size() * rowH + 4f);
@@ -128,10 +176,25 @@ final class LoadPopup implements EditorScreen.Popup {
             boolean hover = ui.over(x0 + 2f, y, x1 - 4f, y + rowH - 2f);
             if (current) ui.draw.grad(x0 + 2f, y, x1 - 4f, y + rowH - 2f, 6f, 0xFF6A4478, 0xFF593A69);
             else if (hover) ui.draw.rect(x0 + 2f, y, x1 - 4f, y + rowH - 2f, 6f, 0x30FFFFFF);
-            Compiled c = RenderCache.of(d.id);
-            Tiles.design(ui, x0 + 19f, y + rowH / 2f - 1f, 30f, c);
+            if (d.type == Design.Type.SCREEN) {
+                // a little picture of a screen
+                ui.draw.rect(x0 + 8f, y + 6f, x0 + 30f, y + 26f, 3f, 0xFF3A2547);
+                ui.draw.border(x0 + 8f, y + 6f, x0 + 30f, y + 26f, 3f, 0.5f, 0x60FFFFFF);
+                ui.draw.rect(x0 + 11f, y + 9f, x0 + 18f, y + 15f, 1.5f, 0xFF1C1124);
+                ui.draw.rect(x0 + 20f, y + 9f, x0 + 27f, y + 15f, 1.5f, Ui.PINK);
+                ui.draw.rect(x0 + 11f, y + 18f, x0 + 27f, y + 23f, 1.5f, 0xFF1C1124);
+            } else {
+                Compiled c = RenderCache.of(d.id);
+                Tiles.design(ui, x0 + 19f, y + rowH / 2f - 1f, 30f, c);
+            }
             ui.text(ui.fit(d.name, x1 - x0 - 90f), x0 + 38f, y + 6f, Ui.TEXT);
-            ui.text(d.parts.size() + " parts, " + d.clips.size() + " clips", x0 + 38f, y + 17f, Ui.TEXT_DIM);
+            String about = switch (d.type) {
+                case MOB -> "Mob, " + d.parts.size() + " parts, " + d.clips.size() + " clips";
+                case BLOCK -> "Block, " + d.parts.size() + " parts";
+                case ITEM -> "Item, " + d.parts.size() + " parts";
+                case SCREEN -> "Screen, " + d.screen.recipes.size() + " steps";
+            };
+            ui.text(ui.fit(about, x1 - x0 - 90f), x0 + 38f, y + 17f, Ui.TEXT_DIM);
             boolean sure = armed.equals(d.id);
             if (ui.chip("del_" + d.id, x1 - 46f, y + 9f, 40f, 13f, sure ? "Sure?" : "Delete", sure)) {
                 if (sure) {
@@ -142,9 +205,10 @@ final class LoadPopup implements EditorScreen.Popup {
                 }
             }
             if (ui.click("load_" + d.id, x0 + 2f, y, x1 - 4f, y + rowH - 2f)) {
+
                 st.commit();
                 st.load(d.copy());
-                s.viewport.aimAt(st.compiled());
+                if (d.type != Design.Type.SCREEN) s.viewport.aimAt(st.compiled());
                 s.popup = null;
             }
         }
@@ -174,7 +238,7 @@ final class LoadPopup implements EditorScreen.Popup {
                     Design d = DesignFiles.read(f);
                     st.commit();
                     st.load(d);
-                    s.viewport.aimAt(st.compiled());
+                    if (d.type != Design.Type.SCREEN) s.viewport.aimAt(st.compiled());
                     s.popup = null;
                     st.say("Opened " + d.name + ". Save it to keep it in this world.", false);
                 } catch (IOException | DesignJson.BadDesign e) {

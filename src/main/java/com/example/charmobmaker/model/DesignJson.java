@@ -25,6 +25,7 @@ public final class DesignJson {
     public static String write(Design d) {
         JsonObject o = new JsonObject();
         o.addProperty("format", Design.FORMAT);
+        if (d.type != Design.Type.MOB) o.addProperty("type", d.type.name().toLowerCase(Locale.ROOT));
         o.addProperty("id", d.id);
         o.addProperty("name", d.name);
         if (!d.author.isEmpty()) o.addProperty("author", d.author);
@@ -40,7 +41,12 @@ public final class DesignJson {
             for (int[] cell : d.paints) paints.add(writeCell(cell));
             o.add("paints", paints);
         }
-        o.add("stats", writeStats(d.stats));
+        switch (d.type) {
+            case MOB -> o.add("stats", writeStats(d.stats));
+            case BLOCK -> o.add("block", writeBlock(d.block));
+            case ITEM -> o.add("item", writeItem(d.item));
+            case SCREEN -> o.add("screen", writeScreen(d.screen));
+        }
         return o.toString();
     }
 
@@ -170,6 +176,98 @@ public final class DesignJson {
         return o;
     }
 
+    private static JsonObject writeBlock(BlockInfo b) {
+        JsonObject o = new JsonObject();
+        o.addProperty("hardness", round(b.hardness));
+        o.addProperty("blast", round(b.blast));
+        o.addProperty("light", b.light);
+        o.addProperty("shape", b.shape.name().toLowerCase(Locale.ROOT));
+        o.addProperty("sound", b.sound);
+        if (!b.screen.isEmpty()) o.addProperty("screen", b.screen);
+        o.addProperty("stack", b.stack);
+        return o;
+    }
+
+    private static JsonObject writeItem(ItemInfo i) {
+        JsonObject o = new JsonObject();
+        o.addProperty("stack", i.stack);
+        o.addProperty("use", i.use.name().toLowerCase(Locale.ROOT));
+        o.addProperty("useSeconds", round(i.useSeconds));
+        o.addProperty("cooldown", round(i.cooldown));
+        o.addProperty("consume", i.consume);
+        if (!i.returns.isEmpty()) o.addProperty("returns", i.returns);
+        o.addProperty("heal", round(i.heal));
+        o.addProperty("food", i.food);
+        o.addProperty("saturation", round(i.saturation));
+        if (i.clearEffects) o.addProperty("clearEffects", true);
+        if (i.launch != 0f) o.addProperty("launch", round(i.launch));
+        if (i.xp != 0) o.addProperty("xp", i.xp);
+        if (!i.sound.isEmpty()) o.addProperty("sound", i.sound);
+        if (!i.particle.isEmpty()) o.addProperty("particle", i.particle);
+        o.addProperty("particleCount", i.particleCount);
+        JsonArray effects = new JsonArray();
+        for (ItemInfo.Effect e : i.effects) {
+            JsonObject oe = new JsonObject();
+            oe.addProperty("id", e.id);
+            oe.addProperty("level", e.level);
+            oe.addProperty("seconds", round(e.seconds));
+            effects.add(oe);
+        }
+        o.add("effects", effects);
+        if (!i.lines.isEmpty()) o.add("lines", strings(i.lines));
+        o.addProperty("handScale", round(i.handScale));
+        return o;
+    }
+
+    private static JsonObject writeScreen(ScreenInfo s) {
+        JsonObject o = new JsonObject();
+        o.addProperty("width", s.width);
+        o.addProperty("height", s.height);
+        o.addProperty("colourTop", String.format(Locale.ROOT, "%08X", s.colourTop));
+        o.addProperty("colourBottom", String.format(Locale.ROOT, "%08X", s.colourBottom));
+        o.addProperty("invX", s.invX);
+        o.addProperty("invY", s.invY);
+        if (s.auto) o.addProperty("auto", true);
+        JsonArray widgets = new JsonArray();
+        for (ScreenInfo.Widget w : s.widgets) {
+            JsonObject ow = new JsonObject();
+            ow.addProperty("kind", w.kind.name().toLowerCase(Locale.ROOT));
+            ow.addProperty("x", w.x);
+            ow.addProperty("y", w.y);
+            ow.addProperty("w", w.w);
+            ow.addProperty("h", w.h);
+            ow.addProperty("colour", String.format(Locale.ROOT, "%08X", w.colour));
+            if (!w.text.isEmpty()) ow.addProperty("text", w.text);
+            if (w.output) ow.addProperty("output", true);
+            if (w.action != ScreenInfo.Widget.ACTION_START) ow.addProperty("action", w.action);
+            if (w.bar) ow.addProperty("bar", true);
+            if (w.centred) ow.addProperty("centred", true);
+            if (!w.item.isEmpty()) ow.addProperty("item", w.item);
+            if (w.paint >= 0) ow.addProperty("paint", w.paint);
+            widgets.add(ow);
+        }
+        o.add("widgets", widgets);
+        JsonArray recipes = new JsonArray();
+        for (ScreenInfo.Recipe r : s.recipes) {
+            JsonObject or = new JsonObject();
+            or.addProperty("name", r.name);
+            JsonArray inputs = new JsonArray();
+            for (ScreenInfo.Ingredient in : r.inputs) {
+                JsonObject oi = new JsonObject();
+                oi.addProperty("item", in.item);
+                oi.addProperty("count", in.count);
+                inputs.add(oi);
+            }
+            or.add("inputs", inputs);
+            or.addProperty("output", r.output);
+            or.addProperty("outputCount", r.outputCount);
+            or.addProperty("seconds", round(r.seconds));
+            recipes.add(or);
+        }
+        o.add("recipes", recipes);
+        return o;
+    }
+
     private static boolean nonZero(float[] v) {
         return v[0] != 0f || v[1] != 0f || v[2] != 0f;
     }
@@ -215,7 +313,11 @@ public final class DesignJson {
             for (JsonElement e : arr(o, "parts")) if (e.isJsonObject()) d.parts.add(readPart(e.getAsJsonObject()));
             for (JsonElement e : arr(o, "clips")) if (e.isJsonObject()) d.clips.add(readClip(e.getAsJsonObject()));
             for (JsonElement e : arr(o, "paints")) d.paints.add(readCell(e));
+            d.type = Design.Type.of(str(o, "type", "mob"));
             if (o.has("stats") && o.get("stats").isJsonObject()) d.stats = readStats(o.getAsJsonObject("stats"));
+            if (o.has("block") && o.get("block").isJsonObject()) d.block = readBlock(o.getAsJsonObject("block"));
+            if (o.has("item") && o.get("item").isJsonObject()) d.item = readItem(o.getAsJsonObject("item"));
+            if (o.has("screen") && o.get("screen").isJsonObject()) d.screen = readScreen(o.getAsJsonObject("screen"));
             return d;
         } catch (RuntimeException e) {
             throw new BadDesign("the design is damaged");
@@ -341,6 +443,95 @@ public final class DesignJson {
         s.spawnNightOnly = bool(o, "spawnNightOnly", false);
         s.eggBase = colour(o, "eggBase", s.eggBase);
         s.eggSpots = colour(o, "eggSpots", s.eggSpots);
+        return s;
+    }
+
+    private static BlockInfo readBlock(JsonObject o) {
+        BlockInfo b = new BlockInfo();
+        b.hardness = num(o, "hardness", b.hardness);
+        b.blast = num(o, "blast", b.blast);
+        b.light = integer(o, "light", b.light);
+        b.shape = BlockInfo.Shape.of(str(o, "shape", "parts"));
+        b.sound = str(o, "sound", b.sound);
+        b.screen = str(o, "screen", "");
+        b.stack = integer(o, "stack", b.stack);
+        return b;
+    }
+
+    private static ItemInfo readItem(JsonObject o) {
+        ItemInfo i = new ItemInfo();
+        i.stack = integer(o, "stack", i.stack);
+        i.use = ItemInfo.Use.of(str(o, "use", "drink"));
+        i.useSeconds = num(o, "useSeconds", i.useSeconds);
+        i.cooldown = num(o, "cooldown", i.cooldown);
+        i.consume = bool(o, "consume", true);
+        i.returns = str(o, "returns", "");
+        i.heal = num(o, "heal", 0f);
+        i.food = integer(o, "food", 0);
+        i.saturation = num(o, "saturation", i.saturation);
+        i.clearEffects = bool(o, "clearEffects", false);
+        i.launch = num(o, "launch", 0f);
+        i.xp = integer(o, "xp", 0);
+        i.sound = str(o, "sound", "");
+        i.particle = str(o, "particle", "");
+        i.particleCount = integer(o, "particleCount", i.particleCount);
+        for (JsonElement e : arr(o, "effects")) {
+            if (!e.isJsonObject()) continue;
+            JsonObject oe = e.getAsJsonObject();
+            ItemInfo.Effect fx = new ItemInfo.Effect();
+            fx.id = str(oe, "id", fx.id);
+            fx.level = integer(oe, "level", fx.level);
+            fx.seconds = num(oe, "seconds", fx.seconds);
+            i.effects.add(fx);
+        }
+        for (JsonElement e : arr(o, "lines")) if (e.isJsonPrimitive()) i.lines.add(e.getAsString());
+        i.handScale = num(o, "handScale", i.handScale);
+        return i;
+    }
+
+    private static ScreenInfo readScreen(JsonObject o) {
+        ScreenInfo s = new ScreenInfo();
+        s.width = integer(o, "width", s.width);
+        s.height = integer(o, "height", s.height);
+        s.colourTop = colour(o, "colourTop", s.colourTop);
+        s.colourBottom = colour(o, "colourBottom", s.colourBottom);
+        s.invX = integer(o, "invX", s.invX);
+        s.invY = integer(o, "invY", s.invY);
+        s.auto = bool(o, "auto", false);
+        for (JsonElement e : arr(o, "widgets")) {
+            if (!e.isJsonObject()) continue;
+            JsonObject ow = e.getAsJsonObject();
+            ScreenInfo.Widget w = new ScreenInfo.Widget();
+            w.kind = ScreenInfo.Widget.Kind.of(str(ow, "kind", "panel"));
+            w.x = integer(ow, "x", w.x);
+            w.y = integer(ow, "y", w.y);
+            w.w = integer(ow, "w", w.w);
+            w.h = integer(ow, "h", w.h);
+            w.colour = colour(ow, "colour", w.colour);
+            w.text = str(ow, "text", "");
+            w.output = bool(ow, "output", false);
+            w.action = integer(ow, "action", ScreenInfo.Widget.ACTION_START);
+            w.bar = bool(ow, "bar", false);
+            w.centred = bool(ow, "centred", false);
+            w.item = str(ow, "item", "");
+            w.paint = integer(ow, "paint", -1);
+            s.widgets.add(w);
+        }
+        for (JsonElement e : arr(o, "recipes")) {
+            if (!e.isJsonObject()) continue;
+            JsonObject or = e.getAsJsonObject();
+            ScreenInfo.Recipe r = new ScreenInfo.Recipe();
+            r.name = str(or, "name", r.name);
+            for (JsonElement ie : arr(or, "inputs")) {
+                if (!ie.isJsonObject()) continue;
+                JsonObject oi = ie.getAsJsonObject();
+                r.inputs.add(new ScreenInfo.Ingredient(str(oi, "item", ""), integer(oi, "count", 1)));
+            }
+            r.output = str(or, "output", r.output);
+            r.outputCount = integer(or, "outputCount", 1);
+            r.seconds = num(or, "seconds", r.seconds);
+            s.recipes.add(r);
+        }
         return s;
     }
 

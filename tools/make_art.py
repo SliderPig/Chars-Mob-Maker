@@ -188,9 +188,45 @@ def main():
     write_json(ASSETS, 'blockstates/mob_makers_bench.json', {'variants': variants})
     write_json(ASSETS, 'models/item/mob_makers_bench.json', {'parent': 'charmobmaker:block/mob_makers_bench'})
     write_json(ASSETS, 'models/item/mob_egg.json', {'parent': 'minecraft:item/template_spawn_egg'})
+    # the one block behind all made blocks: its real look comes from CustomBlockModel
+    write_json(ASSETS, 'models/block/custom_block.json', {'textures': {'particle': 'charmobmaker:block/white'}, 'elements': []})
+    write_json(ASSETS, 'blockstates/custom_block.json', {'variants': {'': {'model': 'charmobmaker:block/custom_block'}}})
+    write_json(ASSETS, 'models/item/custom_block.json', {
+        'parent': 'builtin/entity',
+        'gui_light': 'side',
+        'textures': {'particle': 'charmobmaker:block/white'},
+        'display': {
+            'gui': {'rotation': [30, 225, 0], 'translation': [0, 0, 0], 'scale': [0.625, 0.625, 0.625]},
+            'ground': {'rotation': [0, 0, 0], 'translation': [0, 3, 0], 'scale': [0.25, 0.25, 0.25]},
+            'fixed': {'rotation': [0, 0, 0], 'translation': [0, 0, 0], 'scale': [0.5, 0.5, 0.5]},
+            'thirdperson_righthand': {'rotation': [75, 45, 0], 'translation': [0, 2.5, 0], 'scale': [0.375, 0.375, 0.375]},
+            'thirdperson_lefthand': {'rotation': [75, 45, 0], 'translation': [0, 2.5, 0], 'scale': [0.375, 0.375, 0.375]},
+            'firstperson_righthand': {'rotation': [0, 45, 0], 'translation': [0, 0, 0], 'scale': [0.4, 0.4, 0.4]},
+            'firstperson_lefthand': {'rotation': [0, 225, 0], 'translation': [0, 0, 0], 'scale': [0.4, 0.4, 0.4]},
+        },
+    })
+    # the one item behind all made items, held upright like a can or a bottle
+    write_json(ASSETS, 'models/item/custom_item.json', {
+        'parent': 'builtin/entity',
+        'gui_light': 'side',
+        'textures': {'particle': 'charmobmaker:block/white'},
+        'display': {
+            'gui': {'rotation': [20, 200, 0], 'translation': [0, 0, 0], 'scale': [1, 1, 1]},
+            'ground': {'rotation': [0, 0, 0], 'translation': [0, 2, 0], 'scale': [0.5, 0.5, 0.5]},
+            'fixed': {'rotation': [0, 180, 0], 'translation': [0, 0, 0], 'scale': [1, 1, 1]},
+            'head': {'rotation': [0, 180, 0], 'translation': [0, 13, 7], 'scale': [1, 1, 1]},
+            'thirdperson_righthand': {'rotation': [0, 0, 0], 'translation': [0, 3.5, 1.5], 'scale': [0.7, 0.7, 0.7]},
+            'thirdperson_lefthand': {'rotation': [0, 0, 0], 'translation': [0, 3.5, 1.5], 'scale': [0.7, 0.7, 0.7]},
+            'firstperson_righthand': {'rotation': [0, 200, 0], 'translation': [0, 3.2, 0], 'scale': [0.7, 0.7, 0.7]},
+            'firstperson_lefthand': {'rotation': [0, 160, 0], 'translation': [0, 3.2, 0], 'scale': [0.7, 0.7, 0.7]},
+        },
+    })
     write_json(ASSETS, 'lang/en_us.json', {
         'block.charmobmaker.mob_makers_bench': "Mob Maker's Bench",
         'item.charmobmaker.mob_egg': 'Mob Egg',
+        'block.charmobmaker.custom_block': 'Made Block',
+        'item.charmobmaker.custom_block': 'Made Block',
+        'item.charmobmaker.custom_item': 'Made Item',
         'entity.charmobmaker.custom': 'Made Mob',
         'itemGroup.charmobmaker': 'Mob Maker',
         'key.charmobmaker.open': 'Open the Mob Maker',

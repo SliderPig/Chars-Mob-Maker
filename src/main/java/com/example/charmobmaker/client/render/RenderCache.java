@@ -10,6 +10,7 @@ import java.util.Map;
 // One Compiled per design the PC knows, made when first needed. Thrown away when the design changes or textures reload.
 public final class RenderCache {
     private static final Map<String, Compiled> CACHE = new HashMap<>();
+    private static final Map<String, Compiled> LEFTOVERS = new HashMap<>();
     private static Compiled placeholder;
 
     private RenderCache() {}
@@ -24,14 +25,29 @@ public final class RenderCache {
         return c;
     }
 
+    // Just the bits of a placed block that couldn't go in the chunk.
+    public static Compiled leftovers(String id) {
+        Compiled c = LEFTOVERS.get(id);
+        if (c != null) return c;
+        Design d = Designs.CLIENT.get(id);
+        if (d == null) return null;
+        c = new Compiled(d, true);
+        LEFTOVERS.put(id, c);
+        return c;
+    }
+
     public static void forget(String id) {
         Compiled c = CACHE.remove(id);
+        if (c != null) c.release();
+        c = LEFTOVERS.remove(id);
         if (c != null) c.release();
     }
 
     public static void clear() {
         for (Compiled c : CACHE.values()) c.release();
         CACHE.clear();
+        for (Compiled c : LEFTOVERS.values()) c.release();
+        LEFTOVERS.clear();
         if (placeholder != null) placeholder.release();
         placeholder = null;
     }

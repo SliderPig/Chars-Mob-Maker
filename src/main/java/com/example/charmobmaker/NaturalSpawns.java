@@ -37,7 +37,7 @@ public final class NaturalSpawns {
             if (!level.getGameRules().getBoolean(GameRules.RULE_DOMOBSPAWNING)) continue;
             if (nearbyNatural(level, p) >= Config.MAX_NATURAL_PER_PLAYER.get()) continue;
             for (Design d : Designs.SERVER.values()) {
-                if (d.stats.spawnNaturally) tryOne(level, p, d);
+                if (d.type == Design.Type.MOB && d.stats.spawnNaturally) tryOne(level, p, d);
             }
         }
     }

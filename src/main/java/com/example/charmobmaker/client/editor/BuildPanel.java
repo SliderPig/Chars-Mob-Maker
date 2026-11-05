@@ -289,6 +289,18 @@ final class BuildPanel {
         return a[0] == b[0] && a[1] == b[1] && a[2] == b[2];
     }
 
+    // For other panels: the colour controls at a spot of their own. Answers the colour; nextY() says where they ended.
+    int colourAt(String id, float x, float atY, float w, int colour) {
+        left = x;
+        width = w;
+        y = atY;
+        return colourEditor(id, colour);
+    }
+
+    float nextY() {
+        return y;
+    }
+
     // Colour dots, then red green blue sliders.
     int colourEditor(String id, int colour) {
         Ui ui = s.ui;

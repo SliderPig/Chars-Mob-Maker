@@ -182,6 +182,15 @@ final class Viewport {
         box(ui.draw, null, -a, 0f, -a, a, b, a, 0.75f, colour);
     }
 
+    // For a made block: the block space it sits in, and its solid boxes on its settings tab.
+    void blockFrame(Ui ui, com.example.charmobmaker.model.Design d, boolean showSolid) {
+        box(ui.draw, null, -0.5f, 0f, -0.5f, 0.5f, 1f, 0.5f, 0.75f, 0x90FFC8E6);
+        if (!showSolid || d.block.shape == com.example.charmobmaker.model.BlockInfo.Shape.FULL) return;
+        for (float[] b : com.example.charmobmaker.model.BlockBoxes.of(d)) {
+            box(ui.draw, null, b[0] / 16f - 0.5f, b[1] / 16f, b[2] / 16f - 0.5f, b[3] / 16f - 0.5f, b[4] / 16f, b[5] / 16f - 0.5f, 0.75f, 0xB08CF0D8);
+        }
+    }
+
     // The outline of a box in a part's space, or in the mob's own when no matrix is given.
     private void box(Draw d, Matrix4f m, float x0, float y0, float z0, float x1, float y1, float z1, float width, int colour) {
         float[][] c = new float[8][3];

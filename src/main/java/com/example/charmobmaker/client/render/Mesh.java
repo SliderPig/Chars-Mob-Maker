@@ -1,6 +1,7 @@
 package com.example.charmobmaker.client.render;
 
 import com.mojang.blaze3d.vertex.VertexConsumer;
+import net.minecraft.client.renderer.texture.TextureAtlasSprite;
 import org.joml.Matrix3f;
 import org.joml.Matrix4f;
 
@@ -11,12 +12,14 @@ public final class Mesh {
     private static final int PER_VERTEX = 5, PER_QUAD = 4 * PER_VERTEX + 3;
     private final float[] data; // 4 x (x y z u v) then nx ny nz
     private final int[] colours; // per quad, 0 means white
+    private final TextureAtlasSprite[] sprites; // per quad, only when the mesh knows them
     public final int quads;
     public final float minX, minY, minZ, maxX, maxY, maxZ;
 
-    private Mesh(float[] data, int[] colours, int quads) {
+    private Mesh(float[] data, int[] colours, TextureAtlasSprite[] sprites, int quads) {
         this.data = data;
         this.colours = colours;
+        this.sprites = sprites;
         this.quads = quads;
         float a = Float.MAX_VALUE, b = Float.MAX_VALUE, c = Float.MAX_VALUE, d = -Float.MAX_VALUE, e = -Float.MAX_VALUE, f = -Float.MAX_VALUE;
         for (int q = 0; q < quads; q++) {
@@ -41,6 +44,19 @@ public final class Mesh {
 
     public boolean isEmpty() {
         return quads == 0;
+    }
+
+    // Copies one quad out: 4 x (x y z u v) then nx ny nz.
+    public void quad(int i, float[] out) {
+        System.arraycopy(data, i * PER_QUAD, out, 0, PER_QUAD);
+    }
+
+    public int colour(int i) {
+        return colours == null ? 0 : colours[i];
+    }
+
+    public TextureAtlasSprite sprite(int i) {
+        return sprites == null ? null : sprites[i];
     }
 
     // tint multiplies every quad's own colour. flip = the part is mirrored, so the quads turn over to stay facing outwards.
@@ -80,7 +96,15 @@ public final class Mesh {
     public static final class Builder {
         private float[] data = new float[PER_QUAD * 6];
         private int[] colours;
+        private TextureAtlasSprite[] sprites;
+        private TextureAtlasSprite current;
         private int quads;
+
+        // The sprite the next quads belong to.
+        public Builder sprite(TextureAtlasSprite s) {
+            current = s;
+            return this;
+        }
 
         // Four corners going anti-clockwise as seen from outside
         public Builder quad(float x0, float y0, float z0, float u0, float v0,
@@ -119,6 +143,11 @@ public final class Mesh {
                 if (colours.length <= quads) colours = Arrays.copyOf(colours, data.length / PER_QUAD + 1);
                 colours[quads] = colour;
             }
+            if (current != null) {
+                if (sprites == null) sprites = new TextureAtlasSprite[data.length / PER_QUAD + 1];
+                if (sprites.length <= quads) sprites = Arrays.copyOf(sprites, data.length / PER_QUAD + 1);
+                sprites[quads] = current;
+            }
             quads++;
             return this;
         }
@@ -128,7 +157,7 @@ public final class Mesh {
         }
 
         public Mesh build() {
-            return new Mesh(Arrays.copyOf(data, quads * PER_QUAD), colours == null ? null : Arrays.copyOf(colours, quads), quads);
+            return new Mesh(Arrays.copyOf(data, quads * PER_QUAD), colours == null ? null : Arrays.copyOf(colours, quads), sprites == null ? null : Arrays.copyOf(sprites, quads), quads);
         }
     }
 }

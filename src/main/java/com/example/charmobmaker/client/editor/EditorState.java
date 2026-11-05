@@ -193,6 +193,7 @@ public final class EditorState {
             case "walk" -> 0.8f;
             case "idle" -> 3f;
             case "attack" -> 0.5f;
+            case "working" -> 1f;
             case "hurt" -> 0.4f;
             case "death" -> 1.5f;
             default -> 1f;
@@ -201,7 +202,7 @@ public final class EditorState {
 
     public static Clip.Loop defaultLoop(String clip) {
         return switch (clip) {
-            case "walk", "idle" -> Clip.Loop.LOOP;
+            case "walk", "idle", "working" -> Clip.Loop.LOOP;
             case "death" -> Clip.Loop.HOLD;
             default -> Clip.Loop.ONCE;
         };
