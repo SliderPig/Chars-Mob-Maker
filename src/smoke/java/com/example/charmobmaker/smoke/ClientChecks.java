@@ -42,6 +42,8 @@ public final class ClientChecks {
     private static boolean titleSeen, created, scripted;
     private static int wait;
     private static int problems;
+    // A slow frame runs several game ticks in one go, so after a click the next step waits until the screen has really drawn.
+    private static int frames, framesNeeded;
 
     private record Step(int after, Runnable what) {}
 
@@ -102,10 +104,12 @@ public final class ClientChecks {
             }
             mouse((r[0] + r[2]) / 2f, (r[1] + r[3]) / 2f);
             e.mouseClicked(0, 0, 0);
+            framesNeeded = frames + 3;
         });
         later(2, () -> {
             EditorScreen e = editor();
             if (e != null) e.mouseReleased(0, 0, 0);
+            framesNeeded = frames + 3;
         });
     }
 
@@ -166,6 +170,7 @@ public final class ClientChecks {
         // the list of mobs
         click(5, "load");
         shot(15, "02_mobs_list");
+        click(2, "filter_1");
         click(5, "load_pink_cat");
         check(5, "pink cat loaded", () -> "pink_cat".equals(EditorState.get().design.id));
         later(2, () -> mouse(800f, 225f));
@@ -981,6 +986,11 @@ public final class ClientChecks {
     }
 
     @SubscribeEvent
+    public static void onFrame(TickEvent.RenderTickEvent e) {
+        if (e.phase == TickEvent.Phase.END) frames++;
+    }
+
+    @SubscribeEvent
     public static void onTick(TickEvent.ClientTickEvent e) {
         if (!ON || e.phase != TickEvent.Phase.END) return;
         Minecraft mc = Minecraft.getInstance();
@@ -1002,7 +1012,7 @@ public final class ClientChecks {
             CharMobMaker.LOG.info("[ClientCheck] world is up, {} steps to go", STEPS.size());
         }
         mc.getToasts().clear();
-        if (STEPS.isEmpty()) return;
+        if (STEPS.isEmpty() || frames < framesNeeded) return;
         if (++wait >= STEPS.peek().after()) {
             wait = 0;
             try {
