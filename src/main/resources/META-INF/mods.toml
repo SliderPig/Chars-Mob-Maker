@@ -1,0 +1,27 @@
+modLoader="javafml"
+loaderVersion="[47,)"
+license="MIT"
+
+[[mods]]
+authors="Char"
+modId="charmobmaker"
+version="${file.jarVersion}"
+displayName="{C} Char's Mob Maker"
+description='''
+Make your own mobs in the game: build them from other mobs' body parts, blocks, items and painted boxes, then animate them on a timeline.
+Needed on the server and on every player's PC.
+'''
+
+[[dependencies.charmobmaker]]
+modId="forge"
+mandatory=true
+versionRange="[47,)"
+ordering="NONE"
+side="BOTH"
+
+[[dependencies.charmobmaker]]
+modId="minecraft"
+mandatory=true
+versionRange="[1.20.1,1.21)"
+ordering="NONE"
+side="BOTH"
