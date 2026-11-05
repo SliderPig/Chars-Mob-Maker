@@ -45,13 +45,16 @@ final class AnimatePanel {
         Ui ui = s.ui;
         EditorState st = s.state;
         ui.panel(x0, y0, x1, y1, 9f);
-        float scroll = ui.scroll("anim_scroll", x0 + 2f, y0 + 2f, x1 - 1f, y1 - 2f, contentH);
-        ui.pushClip(x0 + 1f, y0 + 1f, x1 - 1f, y1 - 1f);
+        Clip c = st.clip();
+        // A selected key's ease stays docked at the bottom, always in reach however long the pose rows get. A tiny window has no room for that, so there it scrolls with the rest.
+        boolean keyed = st.key != null && c != null;
+        float dock = keyed && y1 - y0 > 150f ? 58f : 0f;
+        float scroll = ui.scroll("anim_scroll", x0 + 2f, y0 + 2f, x1 - 1f, y1 - 2f - dock, contentH);
+        ui.pushClip(x0 + 1f, y0 + 1f, x1 - 1f, y1 - 1f - dock);
         left = x0 + 7f;
         width = x1 - x0 - 15f;
         y = y0 + 6f - scroll;
         float start = y;
-        Clip c = st.clip();
         section("This clip");
         if (c == null) {
             ui.text("Not made yet", left, y, Ui.TEXT_DIM);
@@ -75,19 +78,27 @@ final class AnimatePanel {
             pose(p, Channel.POS, "Move", -32f, 32f, 2);
             pose(p, Channel.SCALE, "Size", 0f, 3f, 3);
         }
-        if (st.key != null && c != null) {
-            section("Selected key");
-            ui.text("At " + Ui.format(st.key.t, 2) + " s, goes on to the next key:", left, y, Ui.TEXT_DIM);
-            y += 11f;
-            Ease[] eases = Ease.values();
-            float cw = width / 3f;
-            for (int i = 0; i < eases.length; i++) {
-                if (ui.chip("ease_" + eases[i].name().toLowerCase(), left + (i % 3) * cw, y + (i / 3) * 14f, cw - 2f, 12f, eases[i].label, st.key.ease == eases[i])) st.setEase(eases[i]);
-            }
-            y += 30f;
-        }
+        if (keyed && dock == 0f) selectedKey();
         contentH = y - start + 8f;
         ui.popClip();
+        if (dock > 0f) {
+            y = y1 - dock;
+            selectedKey();
+        }
+    }
+
+    private void selectedKey() {
+        Ui ui = s.ui;
+        EditorState st = s.state;
+        section("Selected key");
+        ui.text("At " + Ui.format(st.key.t, 2) + " s, goes on to the next key:", left, y, Ui.TEXT_DIM);
+        y += 11f;
+        Ease[] eases = Ease.values();
+        float cw = width / 3f;
+        for (int i = 0; i < eases.length; i++) {
+            if (ui.chip("ease_" + eases[i].name().toLowerCase(), left + (i % 3) * cw, y + (i / 3) * 14f, cw - 2f, 12f, eases[i].label, st.key.ease == eases[i])) st.setEase(eases[i]);
+        }
+        y += 30f;
     }
 
     private void clipSettings(Clip c) {
