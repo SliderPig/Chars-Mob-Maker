@@ -387,26 +387,33 @@ LIGHTNING = [
 ]
 
 
-def round_can(m, name, colour, side_colour, cell_faces, height=11.0, width=6.0, y=0.0):
-    # three boxes turned a little make a round can
-    body = m.box(name, (width, height, width), (0, y + height / 2, 0), colour=colour, facePaint=cell_faces)
-    m.box(name + ' round 1', (width, height, width), (0, 0, 0), body, colour=side_colour, rot=[0, 30, 0])
-    m.box(name + ' round 2', (width, height, width), (0, 0, 0), body, colour=side_colour, rot=[0, 60, 0])
+def round_can(m, name, colour, shade, height=11.0, radius=3.0, y=0.0):
+    # four long boxes turned 45 degrees apart make an eight sided can with flat, clean sides
+    wide, thin = radius * 2, radius * 0.83
+    body = m.box(name, (wide, height, thin), (0, y + height / 2, 0), colour=colour)
+    m.box(name + ' side 1', (wide, height, thin), (0, 0, 0), body, colour=shade, rot=[0, 45, 0])
+    m.box(name + ' side 2', (wide, height, thin), (0, 0, 0), body, colour=colour, rot=[0, 90, 0])
+    m.box(name + ' side 3', (wide, height, thin), (0, 0, 0), body, colour=shade, rot=[0, 135, 0])
     return body
 
 
 def energy_drink():
     m = Mob('energy_drink', 'Energy Drink', 'item')
     m.paints.append(cell(LIGHTNING, {'P': 0xFFFF8FC7, 'K': 0xFF16121A, 'W': 0xFFFFFFFF}))
-    can = round_can(m, 'Can', 'FFFF8FC7', 'FFD6559C', [0, 0, 0, 0, -1, -1])
-    m.box('Lid', (4.6, 0.6, 4.6), (0, 5.8, 0), can, colour='FFD8D8E0', rot=[0, 45, 0])
-    m.box('Rim', (5.2, 0.5, 5.2), (0, 5.6, 0), can, colour='FFB0B0BC')
-    m.box('Ring pull', (1.2, 0.3, 2.2), (0, 6.2, 0.5), can, colour='FF8E8E9C')
-    m.box('Base', (5.2, 0.5, 5.2), (0, -5.6, 0), can, colour='FFB0B0BC')
+    can = round_can(m, 'Can', 'FFFF8FC7', 'FFE76FAE')
+    m.box('Front label', (4.4, 7.4, 0.12), (0, -0.4, 3.04), can, colour='FFFF8FC7', paint=0)
+    m.box('Back label', (4.4, 7.4, 0.12), (0, -0.4, -3.04), can, colour='FFFF8FC7', paint=0)
+    m.box('Lid', (4.8, 0.5, 2.0), (0, 5.72, 0), can, colour='FFD8D8E0')
+    m.box('Lid side', (4.8, 0.5, 2.0), (0, 5.72, 0), can, colour='FFD8D8E0', rot=[0, 90, 0])
+    m.box('Lid corner', (4.8, 0.5, 2.0), (0, 5.72, 0), can, colour='FFC8C8D2', rot=[0, 45, 0])
+    m.box('Lid corner 2', (4.8, 0.5, 2.0), (0, 5.72, 0), can, colour='FFC8C8D2', rot=[0, 135, 0])
+    m.box('Ring pull', (1.0, 0.3, 2.0), (0, 6.05, 0.5), can, colour='FF8E8E9C')
+    m.box('Base', (4.8, 0.4, 2.0), (0, -5.6, 0), can, colour='FFB0B0BC')
+    m.box('Base side', (4.8, 0.4, 2.0), (0, -5.6, 0), can, colour='FFB0B0BC', rot=[0, 90, 0])
     m.item_info = {'stack': 16, 'use': 'drink', 'useSeconds': 1.6, 'cooldown': 8, 'consume': True, 'returns': 'minecraft:iron_nugget',
-              'heal': 2, 'food': 4, 'saturation': 0.4, 'sound': 'minecraft:entity.player.burp', 'particle': 'minecraft:happy_villager', 'particleCount': 14,
-              'effects': [{'id': 'minecraft:speed', 'level': 2, 'seconds': 60}, {'id': 'minecraft:haste', 'level': 2, 'seconds': 60}, {'id': 'minecraft:jump_boost', 'level': 1, 'seconds': 30}],
-              'lines': ['Wings not included. Purrs included.'], 'handScale': 1.0}
+                   'heal': 2, 'food': 4, 'saturation': 0.4, 'sound': 'minecraft:entity.player.burp', 'particle': 'minecraft:happy_villager', 'particleCount': 5,
+                   'effects': [{'id': 'minecraft:speed', 'level': 2, 'seconds': 60}, {'id': 'minecraft:haste', 'level': 2, 'seconds': 60}, {'id': 'minecraft:jump_boost', 'level': 1, 'seconds': 30}],
+                   'lines': ['Wings not included. Purrs included.'], 'handScale': 1.0}
     m.write()
 
 
@@ -479,21 +486,30 @@ def drink_machine():
     m = Mob('drink_machine', 'Drink Machine', 'block')
     m.paints.append(cell(LIGHTNING, {'P': 0xFFFF8FC7, 'K': 0xFF16121A, 'W': 0xFFFFFFFF}))
     base = m.box('Base', (16, 3, 16), (0, 1.5, 0), texture='minecraft:block/polished_blackstone')
-    body = m.box('Body', (12, 9, 10), (0, 6, -2), base, texture='minecraft:block/pink_concrete')
-    m.box('Sign', (6, 6, 0.4), (0, 0.5, 5.2), body, colour='FFFF8FC7', paint=0)
-    tank = m.block('Tank', 'minecraft:pink_stained_glass', (0, 7.5, 0), body, scale=[0.5, 0.45, 0.5])
-    m.box('Brew in the tank', (6, 4, 6), (0, -0.8, 0), tank, colour='FFFF6FB5', glow=True, scale=[1.4, 1.4, 1.4])
-    press = m.box('Press', (4, 2, 4), (0, 3.5, 7), base, texture='minecraft:block/iron_block')
-    m.box('Press arm', (2, 5, 2), (0, 3, -2), press, texture='minecraft:block/iron_block')
-    m.box('Tray', (6, 0.6, 5), (0, 1.8, 5.5), base, colour='FF2A1B33')
-    m.box('Button', (2, 1, 1), (4, -3, 5.1), body, colour='FF8CE07A', glow=True)
+    body = m.box('Body', (13, 8, 9), (0, 5.5, -3), base, texture='minecraft:block/pink_concrete')
+    m.box('Sign', (5, 5, 0.3), (-3.2, 1, 4.65), body, colour='FFFF8FC7', paint=0)
+    m.box('Button', (2, 1, 0.6), (-3.2, -2.8, 4.7), body, colour='FF8CE07A', glow=True)
+    tank = m.block('Tank', 'minecraft:pink_stained_glass', (0, 6.8, 0), body, scale=[0.56, 0.35, 0.5])
+    m.box('Brew in the tank', (8, 6, 7), (0, -2, 0), tank, colour='FFFF6FB5', glow=True)
+    spout = m.box('Spout', (3, 2, 6), (3.2, 2.2, 6.5), body, texture='minecraft:block/iron_block')
+    nozzle = m.box('Nozzle', (1.4, 1.2, 1.4), (0, -1.5, 2), spout, colour='FF8E8E9C')
+    drip = m.box('Drip', (0.7, 1.1, 0.7), (0, -1.1, 0), nozzle, colour='FFFF6FB5', glow=True, hidden=False)
+    m.box('Tray', (6, 0.4, 6), (3.2, 1.7, 4.5), base, colour='FF2A1B33')
+    can = m.box('Little can', (2.4, 3.8, 2.4), (3.2, 3.8, 4.5), base, colour='FFFF8FC7')
+    m.box('Little can round', (2.4, 3.8, 2.4), (0, 0, 0), can, colour='FFE76FAE', rot=[0, 45, 0])
+    m.box('Little lid', (1.8, 0.3, 1.8), (0, 2, 0), can, colour='FFD8D8E0')
+    m.clip('idle', 2.0)
+    m.key('idle', drip, 'scale', 0, 0.01, 0.01, 0.01, 'step')
     m.clip('working', 0.8)
-    m.key('working', press, 'pos', 0, 0, 0, 0)
-    m.key('working', press, 'pos', 0.4, 0, -2.2, 0, 'in')
+    m.key('working', drip, 'pos', 0, 0, 0, 0, 'in')
+    m.key('working', drip, 'pos', 0.5, 0, -2.6, 0, 'step')
+    m.key('working', drip, 'scale', 0, 1, 1, 1, 'step')
+    m.key('working', spout, 'pos', 0, 0, 0, 0)
+    m.key('working', spout, 'pos', 0.4, 0, -0.4, 0)
     m.key('working', tank, 'scale', 0, 1, 1, 1)
-    m.key('working', tank, 'scale', 0.2, 1.06, 0.96, 1.06)
+    m.key('working', tank, 'scale', 0.2, 1.05, 0.96, 1.05)
     m.key('working', tank, 'scale', 0.4, 1, 1, 1)
-    m.key('working', tank, 'scale', 0.6, 1.06, 0.96, 1.06)
+    m.key('working', tank, 'scale', 0.6, 1.05, 0.96, 1.05)
     m.block_info = {'hardness': 2, 'blast': 6, 'light': 6, 'shape': 'parts', 'sound': 'metal', 'screen': 'drink_machine_screen', 'stack': 16}
     m.write()
 
@@ -501,11 +517,11 @@ def drink_machine():
 def cat_lamp():
     # no clips and no paint: every bit of this goes straight in the chunk, so a house can have hundreds
     m = Mob('cat_lamp', 'Cat Lamp', 'block')
-    base = m.box('Base', (10, 2, 10), (0, 1, 0), texture='minecraft:block/black_wool')
-    pole = m.box('Pole', (2, 6, 2), (0, 4, 0), base, texture='minecraft:block/black_wool')
-    shade = m.block('Shade', 'minecraft:pearlescent_froglight', (0, 7, 0), pole, scale=[0.62, 0.5, 0.62])
-    m.box('Left ear', (3, 3, 2), (2.8, 9.5, 0), shade, colour='FFFF8FC7', scale=[1.6, 2, 1.6], texture='minecraft:block/pink_wool')
-    m.box('Right ear', (3, 3, 2), (-2.8, 9.5, 0), shade, colour='FFFF8FC7', scale=[1.6, 2, 1.6], texture='minecraft:block/pink_wool')
+    base = m.box('Base', (9, 2, 9), (0, 1, 0), texture='minecraft:block/black_wool')
+    pole = m.box('Pole', (1.6, 5, 1.6), (0, 3.5, 0), base, texture='minecraft:block/black_wool')
+    m.block('Shade', 'minecraft:pearlescent_froglight', (0, 6.6, 0), pole, scale=[0.56, 0.44, 0.56])
+    m.box('Left ear', (2.6, 2.2, 1.6), (2.8, 11.6, 0), pole, texture='minecraft:block/black_wool')
+    m.box('Right ear', (2.6, 2.2, 1.6), (-2.8, 11.6, 0), pole, texture='minecraft:block/black_wool')
     m.block_info = {'hardness': 0.5, 'blast': 1, 'light': 14, 'shape': 'parts', 'sound': 'wool', 'stack': 64}
     m.write()
 

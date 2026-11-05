@@ -215,10 +215,11 @@ def main():
             'ground': {'rotation': [0, 0, 0], 'translation': [0, 2, 0], 'scale': [0.5, 0.5, 0.5]},
             'fixed': {'rotation': [0, 180, 0], 'translation': [0, 0, 0], 'scale': [1, 1, 1]},
             'head': {'rotation': [0, 180, 0], 'translation': [0, 13, 7], 'scale': [1, 1, 1]},
-            'thirdperson_righthand': {'rotation': [0, 0, 0], 'translation': [0, 3.5, 1.5], 'scale': [0.7, 0.7, 0.7]},
-            'thirdperson_lefthand': {'rotation': [0, 0, 0], 'translation': [0, 3.5, 1.5], 'scale': [0.7, 0.7, 0.7]},
-            'firstperson_righthand': {'rotation': [0, 200, 0], 'translation': [0, 3.2, 0], 'scale': [0.7, 0.7, 0.7]},
-            'firstperson_lefthand': {'rotation': [0, 160, 0], 'translation': [0, 3.2, 0], 'scale': [0.7, 0.7, 0.7]},
+            # in the game's hand pose the item's Y points along the arm, so a quarter turn stands it upright
+            'thirdperson_righthand': {'rotation': [90, 0, 0], 'translation': [0, 2.5, 1.5], 'scale': [0.55, 0.55, 0.55]},
+            'thirdperson_lefthand': {'rotation': [90, 0, 0], 'translation': [0, 2.5, 1.5], 'scale': [0.55, 0.55, 0.55]},
+            'firstperson_righthand': {'rotation': [0, 200, 0], 'translation': [0, 2, 0], 'scale': [0.42, 0.42, 0.42]},
+            'firstperson_lefthand': {'rotation': [0, 160, 0], 'translation': [0, 2, 0], 'scale': [0.42, 0.42, 0.42]},
         },
     })
     write_json(ASSETS, 'lang/en_us.json', {

@@ -198,6 +198,7 @@ final class ThingPanels {
         y += 16f;
         section("In the hand");
         i.handScale = num("hand", "Size", i.handScale, 0.25f, 2f, 0.1f, 4f, 2);
+        i.handGrip = num("grip", "Grip", i.handGrip, -16f, 16f, -32f, 32f, 1);
         i.stack = Math.round(num("item_stack", "Stack", i.stack, 1f, 64f, 1f, 64f, 0));
         contentH = y - start + 8f;
         ui.popClip();

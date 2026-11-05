@@ -71,6 +71,7 @@ public final class DesignRules {
         while (i.lines.size() > Limits.MAX_LINES) i.lines.remove(i.lines.size() - 1);
         i.lines.replaceAll(l -> cleanName(l, 60, ""));
         i.handScale = range(i.handScale, 0.1f, 4f, 1f);
+        i.handGrip = range(i.handGrip, -32f, 32f, 0f);
     }
 
     private static void tidyScreen(Design d) {

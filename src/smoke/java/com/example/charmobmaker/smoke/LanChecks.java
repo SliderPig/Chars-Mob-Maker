@@ -153,6 +153,27 @@ public final class LanChecks {
         });
         check(40, "forged eggs and deletes do nothing", () -> Designs.CLIENT.containsKey("pink_cat") && Minecraft.getInstance().player.getInventory().items.stream().noneMatch(i -> !MobEggItem.idOf(i).isEmpty()));
 
+        // anyone can use a machine though, and everything in it stays on the server
+        later(1, () -> mark("want_machine"));
+        when(() -> Files.exists(marker("machine_out")), () -> {});
+        later(20, () -> {
+            Minecraft mc = Minecraft.getInstance();
+            net.minecraft.core.BlockPos at = mc.player.blockPosition().offset(2, 0, 0);
+            mc.gameMode.useItemOn(mc.player, net.minecraft.world.InteractionHand.MAIN_HAND, new net.minecraft.world.phys.BlockHitResult(net.minecraft.world.phys.Vec3.atCenterOf(at), net.minecraft.core.Direction.WEST, at, false));
+        });
+        check(20, "a guest can open a machine", () -> Minecraft.getInstance().screen instanceof com.example.charmobmaker.client.machine.MachineScreen);
+        check(1, "and sees what the server put in it", () -> Minecraft.getInstance().player.containerMenu.getSlot(0).getItem().is(net.minecraft.world.item.Items.SWEET_BERRIES));
+        later(1, () -> ((com.example.charmobmaker.client.machine.MachineScreen) Minecraft.getInstance().screen).pressForTest(com.example.charmobmaker.machine.MachineMenu.BUTTON_START));
+        shot(20, "lan_guest_machine");
+        check(60, "a guest's press runs the step on the server", () -> "berry_mash".equals(com.example.charmobmaker.DesignStacks.idOf(Minecraft.getInstance().player.containerMenu.getSlot(2).getItem())));
+        later(1, () -> {
+            // a made-up button press and a click in a slot that doesn't exist must do nothing
+            Minecraft mc = Minecraft.getInstance();
+            mc.gameMode.handleInventoryButtonClick(mc.player.containerMenu.containerId, 9999);
+            mc.player.closeContainer();
+        });
+        later(10, () -> mark("machine_checked"));
+
         // now the host allows everyone
         later(1, () -> mark("please_allow"));
         when(() -> Files.exists(marker("allowed")), () -> {});
@@ -215,6 +236,20 @@ public final class LanChecks {
                 for (String id : new String[] {"pink_cat", "block_golem", "magma_eye"}) CustomMob.spawnNear(guest.serverLevel(), guest.position(), id, 4.0);
                 CharMobMaker.LOG.info("[LanCheck] guest is an op: {}", guest.hasPermissions(2));
                 mark("mobs_out");
+            });
+        });
+        when(() -> Files.exists(marker("want_machine")), () -> {
+            var server = Minecraft.getInstance().getSingleplayerServer();
+            server.execute(() -> {
+                ServerPlayer guest = server.getPlayerList().getPlayers().get(1);
+                net.minecraft.core.BlockPos at = guest.blockPosition().offset(2, 0, 0);
+                Design d = Designs.SERVER.get("drink_machine");
+                guest.serverLevel().setBlock(at, com.example.charmobmaker.block.CustomBlock.stateFor(com.example.charmobmaker.ModContent.CUSTOM_BLOCK.get().defaultBlockState(), d), 3);
+                var be = (com.example.charmobmaker.block.CustomBlockEntity) guest.serverLevel().getBlockEntity(at);
+                be.setDesign("drink_machine");
+                be.items().setStackInSlot(0, new net.minecraft.world.item.ItemStack(net.minecraft.world.item.Items.SWEET_BERRIES, 2));
+                be.items().setStackInSlot(1, new net.minecraft.world.item.ItemStack(net.minecraft.world.item.Items.SUGAR, 1));
+                mark("machine_out");
             });
         });
         when(() -> Files.exists(marker("please_allow")), () -> {

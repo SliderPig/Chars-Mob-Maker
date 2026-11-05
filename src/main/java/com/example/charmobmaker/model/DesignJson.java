@@ -216,6 +216,7 @@ public final class DesignJson {
         o.add("effects", effects);
         if (!i.lines.isEmpty()) o.add("lines", strings(i.lines));
         o.addProperty("handScale", round(i.handScale));
+        if (i.handGrip != 0f) o.addProperty("handGrip", round(i.handGrip));
         return o;
     }
 
@@ -486,6 +487,7 @@ public final class DesignJson {
         }
         for (JsonElement e : arr(o, "lines")) if (e.isJsonPrimitive()) i.lines.add(e.getAsString());
         i.handScale = num(o, "handScale", i.handScale);
+        i.handGrip = num(o, "handGrip", 0f);
         return i;
     }
 

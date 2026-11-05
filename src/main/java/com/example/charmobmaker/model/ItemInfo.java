@@ -52,6 +52,7 @@ public final class ItemInfo {
     public final List<Effect> effects = new ArrayList<>();
     public final List<String> lines = new ArrayList<>(); // extra tooltip lines
     public float handScale = 1f;
+    public float handGrip = 0f; // pixels: moves where the hand holds it, along its height
 
     public ItemInfo copy() {
         ItemInfo i = new ItemInfo();
@@ -73,6 +74,7 @@ public final class ItemInfo {
         for (Effect e : effects) i.effects.add(e.copy());
         i.lines.addAll(lines);
         i.handScale = handScale;
+        i.handGrip = handGrip;
         return i;
     }
 }

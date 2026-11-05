@@ -140,12 +140,12 @@ public final class ScreenPainter {
         float gap = 2f, cw = (w.w - gap * (n - 1)) / n, r = Math.min(w.h / 2f, 6f);
         for (int i = 0; i < n; i++) {
             float x = w.x + i * (cw + gap);
-            boolean current = live.step() == i;
+            boolean current = live.step() == i && !s.recipes.isEmpty();
             boolean hover = mx >= x && my >= w.y && mx < x + cw && my < w.y + w.h;
-            d.rect(x, w.y, x + cw, w.y + w.h, r, hover ? 0xFF4F3660 : 0xC0261830);
+            d.rect(x, w.y, x + cw, w.y + w.h, r, current ? 0xFF4F3660 : hover ? 0xFF4F3660 : 0xC0261830);
             if (current) {
                 float fill = cw * Math.max(0.1f, live.progress());
-                d.grad(x, w.y, x + Math.max(fill, r * 2f), w.y + w.h, r, lift(w.colour, 25), w.colour);
+                d.grad(x, w.y, x + Math.max(fill, r * 2f), w.y + w.h, r, lift(w.colour, -60), lift(w.colour, -90));
             }
             d.border(x, w.y, x + cw, w.y + w.h, r, 0.5f, current ? w.colour : hover ? 0x70FF8FC7 : 0x28FFFFFF);
         }
@@ -165,11 +165,12 @@ public final class ScreenPainter {
             case STEPS -> {
                 int n = s.recipes.size();
                 float gap = 2f, cw = (w.w - gap * (Math.max(1, n) - 1)) / Math.max(1, n);
+                if (n == 0) g.drawString(font, fit(font, "Steps go here", w.w - 4), w.x + 6, w.y + (w.h - 8) / 2, 0xFF9C8A9E, false);
                 for (int i = 0; i < n; i++) {
                     float x = w.x + i * (cw + gap);
                     String t = fit(font, (i + 1) + " " + s.recipes.get(i).name, (int) cw - 3);
                     boolean current = live.step() == i;
-                    g.drawString(font, t, Math.round(x + (cw - font.width(t)) / 2f), w.y + (w.h - 8) / 2, current ? 0xFF2A1420 : 0xFFE2CFE0, false);
+                    g.drawString(font, t, Math.round(x + (cw - font.width(t)) / 2f), w.y + (w.h - 8) / 2, current ? 0xFFFFFFFF : 0xFFE2CFE0, false);
                 }
             }
             default -> {

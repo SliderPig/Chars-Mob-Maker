@@ -621,6 +621,312 @@ public final class ClientChecks {
         });
     }
 
+    // ---------- made blocks, items, screens and machines ----------
+
+    private static void slotClick(int slot) {
+        Minecraft mc = Minecraft.getInstance();
+        mc.gameMode.handleInventoryMouseClick(mc.player.containerMenu.containerId, slot, 0, net.minecraft.world.inventory.ClickType.PICKUP, mc.player);
+    }
+
+    private static net.minecraft.world.item.ItemStack menuStack(int slot) {
+        return Minecraft.getInstance().player.containerMenu.getSlot(slot).getItem();
+    }
+
+    private static void put(int ticks, int fromInvSlotInMenu, int toSlot) {
+        later(ticks, () -> slotClick(fromInvSlotInMenu));
+        later(2, () -> slotClick(toSlot));
+    }
+
+    private static void thingsWalk() {
+        server(40, p -> {
+            ServerLevel level = p.serverLevel();
+            p.setGameMode(GameType.SURVIVAL);
+            p.getAbilities().mayfly = true;
+            p.getAbilities().flying = false;
+            p.onUpdateAbilities();
+            level.setDayTime(6000);
+            level.getGameRules().getRule(GameRules.RULE_DAYLIGHT).set(false, level.getServer());
+            level.getGameRules().getRule(GameRules.RULE_DOMOBSPAWNING).set(false, level.getServer());
+            p.connection.teleport(p.getX(), p.getY(), p.getZ(), -90f, 10f);
+            p.getInventory().clearContent();
+            p.getInventory().setItem(0, com.example.charmobmaker.DesignStacks.of(Designs.SERVER.get("energy_drink")));
+            p.getInventory().setItem(1, com.example.charmobmaker.DesignStacks.of(Designs.SERVER.get("drink_machine")));
+            p.getInventory().setItem(2, com.example.charmobmaker.DesignStacks.of(Designs.SERVER.get("cat_lamp")));
+            p.getInventory().setItem(3, com.example.charmobmaker.DesignStacks.of(Designs.SERVER.get("berry_mash")));
+            p.getInventory().setItem(4, com.example.charmobmaker.DesignStacks.of(Designs.SERVER.get("energy_brew")));
+            p.getInventory().setItem(9, new net.minecraft.world.item.ItemStack(net.minecraft.world.item.Items.SWEET_BERRIES, 8));
+            p.getInventory().setItem(10, new net.minecraft.world.item.ItemStack(net.minecraft.world.item.Items.SUGAR, 8));
+            p.getInventory().setItem(11, new net.minecraft.world.item.ItemStack(net.minecraft.world.item.Items.GLOWSTONE_DUST, 8));
+            p.getInventory().setItem(12, new net.minecraft.world.item.ItemStack(net.minecraft.world.item.Items.IRON_NUGGET, 8));
+        });
+        check(10, "the Energy Drink things reached the PC", () -> Designs.CLIENT.containsKey("energy_drink") && Designs.CLIENT.containsKey("drink_machine_screen"));
+        check(1, "stack sizes come from the design", () -> Minecraft.getInstance().player.getInventory().getItem(0).getMaxStackSize() == 16);
+        later(1, () -> {
+            var lines = Minecraft.getInstance().player.getInventory().getItem(0).getTooltipLines(Minecraft.getInstance().player, net.minecraft.world.item.TooltipFlag.Default.NORMAL);
+            for (var l : lines) CharMobMaker.LOG.info("[ClientCheck] tooltip: {}", l.getString());
+        });
+        // the drink in the hand, first and third person
+        shot(10, "40_drink_first_person");
+        later(1, () -> Minecraft.getInstance().options.setCameraType(CameraType.THIRD_PERSON_FRONT));
+        shot(8, "41_drink_third_front");
+        later(1, () -> Minecraft.getInstance().options.setCameraType(CameraType.THIRD_PERSON_BACK));
+        shot(8, "42_drink_third_back");
+        later(1, () -> Minecraft.getInstance().options.setCameraType(CameraType.FIRST_PERSON));
+        // placing the machine and a lamp for real, through the game
+        later(2, () -> {
+            var mc = Minecraft.getInstance();
+            mc.player.getInventory().selected = 1;
+        });
+        server(3, p -> p.connection.teleport(p.getX(), p.getY(), p.getZ(), -90f, 25f));
+        later(5, () -> {
+            var mc = Minecraft.getInstance();
+            BlockPos at = mc.player.blockPosition().offset(3, -1, 0);
+            mc.gameMode.useItemOn(mc.player, net.minecraft.world.InteractionHand.MAIN_HAND, new net.minecraft.world.phys.BlockHitResult(net.minecraft.world.phys.Vec3.atCenterOf(at).add(0, 0.5, 0), net.minecraft.core.Direction.UP, at, false));
+        });
+        check(8, "the machine got placed by hand", () -> {
+            var mc = Minecraft.getInstance();
+            var be = mc.level.getBlockEntity(mc.player.blockPosition().offset(3, 0, 0));
+            return be instanceof com.example.charmobmaker.block.CustomBlockEntity c && c.designId().equals("drink_machine");
+        });
+        later(1, () -> Minecraft.getInstance().player.getInventory().selected = 2);
+        later(3, () -> {
+            var mc = Minecraft.getInstance();
+            BlockPos at = mc.player.blockPosition().offset(3, -1, 2);
+            mc.gameMode.useItemOn(mc.player, net.minecraft.world.InteractionHand.MAIN_HAND, new net.minecraft.world.phys.BlockHitResult(net.minecraft.world.phys.Vec3.atCenterOf(at).add(0, 0.5, 0), net.minecraft.core.Direction.UP, at, false));
+        });
+        check(8, "the machine's light is on", () -> {
+            var mc = Minecraft.getInstance();
+            return mc.level.getBlockState(mc.player.blockPosition().offset(3, 0, 0)).getValue(com.example.charmobmaker.block.CustomBlock.LIGHT) == 6;
+        });
+        check(1, "the lamp went in too, and its shape comes from its parts", () -> {
+            var mc = Minecraft.getInstance();
+            BlockPos at = mc.player.blockPosition().offset(3, 0, 2);
+            var shape = mc.level.getBlockState(at).getShape(mc.level, at);
+            return mc.level.getBlockEntity(at) instanceof com.example.charmobmaker.block.CustomBlockEntity c && c.designId().equals("cat_lamp") && !shape.isEmpty() && shape.bounds().maxX - shape.bounds().minX < 1.0;
+        });
+        shot(6, "43_placed_in_the_world");
+        // up close, side on
+        server(1, p -> p.connection.teleport(p.getX() + 0.8, p.getY(), p.getZ() - 0.6, -60f, 30f));
+        shot(6, "44_machine_close");
+        // the screen, by right clicking the machine
+        later(2, () -> Minecraft.getInstance().player.getInventory().selected = 8);
+        server(1, p -> p.connection.teleport(p.getX() - 0.8, p.getY(), p.getZ() + 0.6, -90f, 25f));
+        later(5, () -> {
+            var mc = Minecraft.getInstance();
+            BlockPos at = mc.player.blockPosition().offset(3, 0, 0);
+            mc.gameMode.useItemOn(mc.player, net.minecraft.world.InteractionHand.MAIN_HAND, new net.minecraft.world.phys.BlockHitResult(net.minecraft.world.phys.Vec3.atCenterOf(at), net.minecraft.core.Direction.WEST, at, false));
+        });
+        check(10, "right clicking the machine opens its screen", () -> Minecraft.getInstance().screen instanceof com.example.charmobmaker.client.machine.MachineScreen);
+        shot(5, "50_machine_screen_empty");
+        // slots 0 1 2 are the machine's, 3 on is the player's: berries 3, sugar 4, glowstone 5, nuggets 6
+        later(1, () -> slotClick(3));
+        later(2, () -> { /* berries on the mouse */ });
+        later(1, () -> slotClick(0));
+        later(2, () -> slotClick(4));
+        later(1, () -> slotClick(1));
+        check(4, "items really moved into the machine's slots", () -> menuStack(0).is(net.minecraft.world.item.Items.SWEET_BERRIES) && menuStack(1).is(net.minecraft.world.item.Items.SUGAR));
+        shot(2, "51_machine_filled");
+        later(1, () -> ((com.example.charmobmaker.client.machine.MachineScreen) Minecraft.getInstance().screen).pressForTest(com.example.charmobmaker.machine.MachineMenu.BUTTON_START));
+        shot(25, "52_machine_step_one");
+        check(45, "step one made a Berry Mash in the output slot", () -> com.example.charmobmaker.DesignStacks.idOf(menuStack(2)).equals("berry_mash"));
+        shot(1, "53_mash_done");
+        // take the left over berries and sugar out, add glowstone
+        later(1, () -> {
+            var mc = Minecraft.getInstance();
+            mc.gameMode.handleInventoryMouseClick(mc.player.containerMenu.containerId, 0, 0, net.minecraft.world.inventory.ClickType.QUICK_MOVE, mc.player);
+            mc.gameMode.handleInventoryMouseClick(mc.player.containerMenu.containerId, 1, 0, net.minecraft.world.inventory.ClickType.QUICK_MOVE, mc.player);
+        });
+        later(3, () -> slotClick(5));
+        later(2, () -> slotClick(0));
+        check(2, "glowstone went in", () -> menuStack(0).is(net.minecraft.world.item.Items.GLOWSTONE_DUST));
+        // the output slot can't be put into by hand
+        later(2, () -> slotClick(6));
+        later(2, () -> slotClick(2));
+        check(3, "nothing can be put in an output slot by hand", () -> com.example.charmobmaker.DesignStacks.idOf(menuStack(2)).equals("berry_mash") || menuStack(2).isEmpty());
+        later(2, () -> slotClick(6));
+        later(2, () -> ((com.example.charmobmaker.client.machine.MachineScreen) Minecraft.getInstance().screen).pressForTest(com.example.charmobmaker.machine.MachineMenu.BUTTON_STEP + 1));
+        shot(30, "54_machine_step_two");
+        check(60, "step two made an Energy Brew", () -> com.example.charmobmaker.DesignStacks.idOf(menuStack(2)).equals("energy_brew"));
+        later(1, () -> {
+            var mc = Minecraft.getInstance();
+            mc.gameMode.handleInventoryMouseClick(mc.player.containerMenu.containerId, 0, 0, net.minecraft.world.inventory.ClickType.QUICK_MOVE, mc.player);
+        });
+        later(3, () -> slotClick(6));
+        later(2, () -> slotClick(0));
+        later(2, () -> ((com.example.charmobmaker.client.machine.MachineScreen) Minecraft.getInstance().screen).pressForTest(com.example.charmobmaker.machine.MachineMenu.BUTTON_START));
+        shot(20, "55_machine_step_three");
+        check(40, "step three made an Energy Drink", () -> com.example.charmobmaker.DesignStacks.idOf(menuStack(2)).equals("energy_drink"));
+        shot(1, "56_drink_made");
+        later(1, () -> {
+            var mc = Minecraft.getInstance();
+            mc.gameMode.handleInventoryMouseClick(mc.player.containerMenu.containerId, 2, 0, net.minecraft.world.inventory.ClickType.QUICK_MOVE, mc.player);
+        });
+        later(4, () -> Minecraft.getInstance().player.closeContainer());
+        // drinking it for real
+        later(3, () -> Minecraft.getInstance().player.getInventory().selected = 0);
+        server(1, p -> p.getFoodData().setFoodLevel(10));
+        later(3, () -> Minecraft.getInstance().options.keyUse.setDown(true));
+        shot(14, "57_drinking");
+        later(1, () -> Minecraft.getInstance().options.setCameraType(CameraType.THIRD_PERSON_FRONT));
+        shot(6, "57b_drinking_third");
+        later(30, () -> Minecraft.getInstance().options.keyUse.setDown(false));
+        later(1, () -> Minecraft.getInstance().options.setCameraType(CameraType.FIRST_PERSON));
+        server(4, p -> {
+            drank = p.hasEffect(net.minecraft.world.effect.MobEffects.MOVEMENT_SPEED) && p.getEffect(net.minecraft.world.effect.MobEffects.MOVEMENT_SPEED).getAmplifier() == 1 && p.hasEffect(net.minecraft.world.effect.MobEffects.DIG_SPEED);
+            canBack = p.getInventory().getItem(0).is(net.minecraft.world.item.Items.IRON_NUGGET) || p.getInventory().contains(new net.minecraft.world.item.ItemStack(net.minecraft.world.item.Items.IRON_NUGGET));
+            CharMobMaker.LOG.info("[ClientCheck] after drinking: food {} effects {} hand {}", p.getFoodData().getFoodLevel(), p.getActiveEffects().size(), p.getInventory().getItem(0));
+        });
+        check(3, "drinking gave its effects", () -> drank);
+        check(1, "and the can came back as a nugget", () -> canBack);
+        shot(2, "58_after_drinking");
+        // the items in slots and on the ground
+        later(1, () -> Minecraft.getInstance().setScreen(new net.minecraft.client.gui.screens.inventory.InventoryScreen(Minecraft.getInstance().player)));
+        shot(6, "59_inventory_icons");
+        later(1, () -> Minecraft.getInstance().setScreen(null));
+        server(1, p -> {
+            for (int i = 0; i < 5; i++) {
+                var e = p.spawnAtLocation(p.getInventory().getItem(i).copy(), 1f);
+                if (e != null) {
+                    e.setPos(p.getX() + 3, p.getY() + 0.2, p.getZ() - 4 + i);
+                    e.setPickUpDelay(600);
+                }
+            }
+            p.connection.teleport(p.getX(), p.getY(), p.getZ(), -110f, 20f);
+        });
+        shot(10, "60_on_the_ground");
+        // a lot of lamps: no clips, so they're in the chunk and cost nothing per frame
+        later(1, () -> fpsBefore = Minecraft.getInstance().getFps());
+        server(5, p -> {
+            ServerLevel level = p.serverLevel();
+            BlockPos at = p.blockPosition();
+            var d = Designs.SERVER.get("cat_lamp");
+            for (int x = 0; x < 22; x++) {
+                for (int z = 0; z < 22; z++) {
+                    BlockPos b = at.offset(6 + x, 0, -11 + z);
+                    level.setBlock(b, com.example.charmobmaker.block.CustomBlock.stateFor(com.example.charmobmaker.ModContent.CUSTOM_BLOCK.get().defaultBlockState(), d), 2);
+                    ((com.example.charmobmaker.block.CustomBlockEntity) level.getBlockEntity(b)).setDesign("cat_lamp");
+                }
+            }
+            p.connection.teleport(p.getX(), p.getY() + 3, p.getZ(), -90f, 22f);
+        });
+        shot(40, "61_many_lamps");
+        later(40, () -> CharMobMaker.LOG.info("[ClientCheck] fps before lamps {}, with 484 lamps {}", fpsBefore, Minecraft.getInstance().getFps()));
+
+        // the editor for all of these
+        later(5, () -> Minecraft.getInstance().player.connection.sendCommand("mobmaker open energy_drink"));
+        check(15, "opens on the item", () -> editor() != null && EditorState.get().design.id.equals("energy_drink"));
+        later(2, () -> mouse(800f, 225f));
+        shot(4, "70_editor_item");
+        click(2, "tab_stats");
+        shot(5, "71_editor_item_tab");
+        later(1, () -> mouse(editor().ui.width - 60f, 200f));
+        later(2, () -> editor().mouseScrolled(0, 0, -40));
+        shot(4, "71b_item_tab_lower");
+        later(1, () -> editor().mouseScrolled(0, 0, 90));
+        click(2, "tab_build");
+        click(3, "load");
+        click(5, "load_drink_machine");
+        later(1, () -> mouse(800f, 225f));
+        shot(5, "72_editor_block");
+        click(2, "tab_stats");
+        shot(5, "73_editor_block_tab");
+        click(2, "tab_animate");
+        click(2, "clip_working");
+        later(1, () -> EditorState.get().time = 0.4f);
+        shot(5, "74_editor_block_working");
+        click(2, "tab_build");
+        click(3, "load");
+        click(5, "load_drink_machine_screen");
+        later(1, () -> mouse(800f, 225f));
+        shot(5, "75_editor_layout");
+        later(1, () -> {
+            float[] r = editor().ui.rects.get("w_2");
+            mouse((r[0] + r[2]) / 2f, (r[1] + r[3]) / 2f);
+        });
+        later(1, () -> editor().mouseClicked(0, 0, 0));
+        later(2, () -> editor().mouseReleased(0, 0, 0));
+        shot(3, "76_editor_layout_widget");
+        click(2, "tab_stats");
+        shot(5, "77_editor_recipes");
+
+        // making a new screen from nothing, with the real buttons
+        click(2, "load");
+        click(4, "new_screen");
+        check(3, "a new screen starts", () -> EditorState.get().design.type == com.example.charmobmaker.model.Design.Type.SCREEN && EditorState.get().design.id.isEmpty());
+        click(3, "add_w_slot");
+        check(2, "a slot got added", () -> EditorState.get().design.screen.slots().size() == 1);
+        // drag it about
+        later(2, () -> {
+            var w = EditorState.get().design.screen.slots().get(0);
+            startSlotX = w.x;
+            float[] at = editor().screens().canvasSpot(w.x + 9, w.y + 9);
+            lastX = at[0];
+            lastY = at[1];
+            mouse(lastX, lastY);
+        });
+        later(1, () -> editor().mouseClicked(0, 0, 0));
+        later(2, () -> mouseBy(-30f, 10f));
+        later(2, () -> editor().mouseReleased(0, 0, 0));
+        check(2, "dragging moved the slot", () -> EditorState.get().design.screen.slots().get(0).x != startSlotX);
+        click(1, "w_output");
+        check(2, "a slot can be made an output", () -> EditorState.get().design.screen.slots().get(0).output);
+        click(1, "add_w_button");
+        click(1, "add_w_progress");
+        click(1, "add_w_steps");
+        click(1, "add_w_panel");
+        click(1, "add_w_text");
+        click(1, "add_w_image");
+        shot(3, "78_new_screen_layout");
+        click(1, "w_paint");
+        shot(4, "78b_paint_picture");
+        click(1, "popup_close");
+        click(2, "tab_stats");
+        click(2, "recipe_add");
+        check(3, "a step got added", () -> EditorState.get().design.screen.recipes.size() == 1);
+        click(2, "r0_add");
+        click(4, "pick_search");
+        typeText(1, "sugar");
+        click(5, "pick_minecraft:sugar");
+        check(3, "an input got picked", () -> EditorState.get().design.screen.recipes.get(0).inputs.size() == 1);
+        shot(3, "79_new_recipe");
+        click(1, "save");
+        check(15, "the new screen saved", () -> !EditorState.get().design.id.isEmpty() && Designs.CLIENT.containsKey(EditorState.get().design.id));
+        // and a new item and block from nothing
+        click(2, "load");
+        click(4, "new_item");
+        check(3, "a new item starts", () -> EditorState.get().design.type == com.example.charmobmaker.model.Design.Type.ITEM);
+        click(2, "tab_stats");
+        click(2, "effect_add");
+        click(4, "pick_search");
+        typeText(1, "regeneration");
+        click(4, "pick_minecraft:regeneration");
+        check(3, "an effect got added", () -> EditorState.get().design.item.effects.size() == 1);
+        click(1, "save");
+        check(15, "the new item saved", () -> !EditorState.get().design.id.isEmpty() && Designs.CLIENT.containsKey(EditorState.get().design.id));
+        click(1, "egg");
+        check(40, "Give put it in the bag", () -> Minecraft.getInstance().player.getInventory().items.stream().anyMatch(i -> com.example.charmobmaker.DesignStacks.idOf(i).equals(EditorState.get().design.id)));
+        click(1, "load");
+        shot(5, "80_all_things_list");
+        click(1, "filter_2");
+        shot(3, "80b_blocks_only");
+        click(1, "new_block");
+        check(3, "a new block starts", () -> EditorState.get().design.type == com.example.charmobmaker.model.Design.Type.BLOCK);
+        click(2, "tab_stats");
+        click(2, "block_screen");
+        shot(4, "81_pick_a_screen");
+        click(2, "pick_drink_machine_screen");
+        check(2, "picked its screen", () -> EditorState.get().design.block.screen.equals("drink_machine_screen"));
+        later(1, () -> Minecraft.getInstance().setScreen(null));
+        check(1, "the creative tab has the things", () -> com.example.charmobmaker.ModContent.TAB.get().getDisplayItems().stream().anyMatch(i -> i.is(com.example.charmobmaker.ModContent.CUSTOM_ITEM.get())) && com.example.charmobmaker.ModContent.TAB.get().getDisplayItems().stream().anyMatch(i -> i.is(com.example.charmobmaker.ModContent.CUSTOM_BLOCK_ITEM.get())));
+        later(10, () -> {
+            CharMobMaker.LOG.info("[ClientCheck] finished, {} problems", problems);
+            Minecraft.getInstance().stop();
+        });
+    }
+
+    private static volatile boolean drank, canBack;
+    private static int fpsBefore, startSlotX;
+
     private static float lastX, lastY;
     private static int lastCount;
     private static float keyTimeBefore;
@@ -677,9 +983,11 @@ public final class ClientChecks {
         if (mc.player == null || mc.getSingleplayerServer() == null || mc.getSingleplayerServer().getPlayerList().getPlayers().isEmpty()) return;
         if (!scripted) {
             scripted = true;
-            wholeWalk();
+            if ("things".equals(ONLY)) thingsWalk();
+            else wholeWalk();
             CharMobMaker.LOG.info("[ClientCheck] world is up, {} steps to go", STEPS.size());
         }
+        mc.getToasts().clear();
         if (STEPS.isEmpty()) return;
         if (++wait >= STEPS.peek().after()) {
             wait = 0;

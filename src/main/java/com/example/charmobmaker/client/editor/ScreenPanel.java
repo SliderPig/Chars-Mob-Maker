@@ -15,7 +15,7 @@ import net.minecraft.world.item.ItemStack;
 import java.util.List;
 
 // Making a screen: drag things around on it, what you see is what the real game shows. The second tab is the steps its machine can do.
-final class ScreenPanel {
+public final class ScreenPanel {
     private static final int NONE = -1, INVENTORY = -2;
     private final EditorScreen s;
     private int selected = NONE;
@@ -27,6 +27,11 @@ final class ScreenPanel {
 
     ScreenPanel(EditorScreen s) {
         this.s = s;
+    }
+
+    // Where a spot on the screen being made shows in the editor.
+    public float[] canvasSpot(int x, int y) {
+        return new float[] {originX + x * zoom, originY + y * zoom};
     }
 
     private ScreenInfo screen() {

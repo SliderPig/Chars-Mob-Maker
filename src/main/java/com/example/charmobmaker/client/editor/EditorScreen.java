@@ -424,6 +424,11 @@ public final class EditorScreen extends Screen {
         return viewport.screenOf(state, state.selected);
     }
 
+    // For the test walk-through: the layout canvas.
+    public ScreenPanel screens() {
+        return screens;
+    }
+
     public float[] screenOfPart(String id) {
         return viewport.screenOf(state, id);
     }

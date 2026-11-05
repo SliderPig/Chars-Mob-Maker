@@ -39,25 +39,22 @@ public final class CustomItemRenderer extends BlockEntityWithoutLevelRenderer {
         ps.pushPose();
         ps.translate(0.5f, 0.5f, 0.5f);
         ps.scale(scale, scale, scale);
-        ps.translate(-(b[0] + b[3]) / 2f, -(b[1] + b[4]) / 2f, -(b[2] + b[5]) / 2f);
+        ps.translate(-(b[0] + b[3]) / 2f, -(b[1] + b[4]) / 2f - (inHand && d != null && d.type == Design.Type.ITEM ? d.item.handGrip : 0f), -(b[2] + b[5]) / 2f);
         pose(c, d);
         c.draw(ps, buffers, light, overlay, 0f, null);
         ps.popPose();
     }
 
     private static void pose(Compiled c, Design d) {
-        Rig_idle:
-        {
-            if (d == null) break Rig_idle;
-            var clip = c.rig.clip("idle");
-            if (clip == null || clip.clip.tracks.isEmpty()) break Rig_idle;
-            Clip k = clip.clip;
-            var level = Minecraft.getInstance().level;
-            float now = level == null ? 0f : level.getGameTime() / 20f;
-            clip.sample(k.wrapTime(now * k.speed), c.out);
-            c.rig.pose(c.out, 0f, 0f, c.world);
+        var clip = d == null ? null : c.rig.clip("idle");
+        if (clip == null || clip.clip.tracks.isEmpty()) {
+            c.rig.pose(null, 0f, 0f, c.world);
             return;
         }
-        c.rig.pose(null, 0f, 0f, c.world);
+        Clip k = clip.clip;
+        var level = Minecraft.getInstance().level;
+        float now = level == null ? 0f : level.getGameTime() / 20f;
+        clip.sample(k.wrapTime(now * k.speed), c.out);
+        c.rig.pose(c.out, 0f, 0f, c.world);
     }
 }
