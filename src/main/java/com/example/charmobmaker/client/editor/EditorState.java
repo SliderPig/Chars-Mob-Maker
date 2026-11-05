@@ -1,6 +1,5 @@
 package com.example.charmobmaker.client.editor;
 
-import com.example.charmobmaker.Designs;
 import com.example.charmobmaker.Net;
 import com.example.charmobmaker.client.render.Compiled;
 import com.example.charmobmaker.model.Channel;
@@ -154,19 +153,15 @@ public final class EditorState {
         Net.uploadToServer(json);
     }
 
-    public void onServerReply(boolean ok, String id, String message) {
+    public void onServerReply(boolean ok, boolean wasSave, String id, String message) {
         say(message, !ok);
-        if (ok && waitingForSave) {
-            waitingForSave = false;
-            if (!id.isEmpty()) design.id = id;
-            history.reset(DesignJson.write(design));
-            savedText = history.current();
-            Minecraft.getInstance().getSoundManager().play(SimpleSoundInstance.forUI(SoundEvents.CAT_AMBIENT, 1.2f, 0.35f));
-        } else if (!ok) {
-            waitingForSave = false;
-        } else if (!id.isEmpty() && Designs.CLIENT.containsKey(id)) {
-            waitingForSave = false;
-        }
+        if (!wasSave) return;
+        waitingForSave = false;
+        if (!ok) return;
+        if (!id.isEmpty()) design.id = id;
+        history.reset(DesignJson.write(design));
+        savedText = history.current();
+        Minecraft.getInstance().getSoundManager().play(SimpleSoundInstance.forUI(SoundEvents.CAT_AMBIENT, 1.2f, 0.35f));
     }
 
     // ---------- which part and clip ----------

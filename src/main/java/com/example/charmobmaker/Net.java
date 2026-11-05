@@ -74,15 +74,16 @@ public final class Net {
         }
     }
 
-    public record SaveReply(boolean ok, String id, String message) {
+    public record SaveReply(boolean ok, boolean wasSave, String id, String message) {
         void write(FriendlyByteBuf b) {
             b.writeBoolean(ok);
+            b.writeBoolean(wasSave);
             b.writeUtf(id, 64);
             b.writeUtf(message, 256);
         }
 
         static SaveReply read(FriendlyByteBuf b) {
-            return new SaveReply(b.readBoolean(), b.readUtf(64), b.readUtf(256));
+            return new SaveReply(b.readBoolean(), b.readBoolean(), b.readUtf(64), b.readUtf(256));
         }
     }
 
@@ -194,7 +195,11 @@ public final class Net {
     }
 
     private static void reply(ServerPlayer p, boolean ok, String id, String message) {
-        CHANNEL.send(PacketDistributor.PLAYER.with(() -> p), new SaveReply(ok, id, message));
+        CHANNEL.send(PacketDistributor.PLAYER.with(() -> p), new SaveReply(ok, false, id, message));
+    }
+
+    private static void replySave(ServerPlayer p, boolean ok, String id, String message) {
+        CHANNEL.send(PacketDistributor.PLAYER.with(() -> p), new SaveReply(ok, true, id, message));
     }
 
     private static void onUpload(UploadPiece m, Supplier<NetworkEvent.Context> c) {
@@ -203,12 +208,12 @@ public final class Net {
         UUID who = p.getUUID();
         if (!Access.canEdit(p)) {
             UPLOADS.remove(who);
-            reply(p, false, "", Access.refusal());
+            replySave(p, false, "", Access.refusal());
             return;
         }
         if (m.total() < 1 || m.total() > MAX_PIECES || m.index() < 0 || m.index() >= m.total()) {
             UPLOADS.remove(who);
-            reply(p, false, "", "That design is too big.");
+            replySave(p, false, "", "That design is too big.");
             return;
         }
         Upload up = m.index() == 0 ? new Upload() : UPLOADS.get(who);
@@ -219,7 +224,7 @@ public final class Net {
         if (m.index() == 0) UPLOADS.put(who, up);
         if (up.bytes.size() + m.data().length > Limits.MAX_DESIGN_GZ_BYTES) {
             UPLOADS.remove(who);
-            reply(p, false, "", "That design is too big.");
+            replySave(p, false, "", "That design is too big.");
             return;
         }
         up.bytes.writeBytes(m.data());
@@ -229,17 +234,17 @@ public final class Net {
         long now = System.currentTimeMillis();
         Long last = LAST_SAVE.get(who);
         if (last != null && now - last < 300) {
-            reply(p, false, "", "Saving too quickly, try again.");
+            replySave(p, false, "", "Saving too quickly, try again.");
             return;
         }
         LAST_SAVE.put(who, now);
         String json = Packer.unpack(up.bytes.toByteArray());
         if (json == null) {
-            reply(p, false, "", "That design is too big.");
+            replySave(p, false, "", "That design is too big.");
             return;
         }
         DesignStore.Saved saved = DesignStore.save(p, json);
-        reply(p, saved.ok(), saved.id(), saved.message());
+        replySave(p, saved.ok(), saved.id(), saved.message());
     }
 
     private static void onAction(Action m, Supplier<NetworkEvent.Context> c) {

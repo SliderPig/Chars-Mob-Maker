@@ -184,7 +184,7 @@ final class StatsPanel {
         }
         if (summon) {
             if (ui.button("summon_pick", left, y, width, 13f, ui.fit("Helper: " + t.summonMob, width - 8f))) {
-                s.popup = PickerPopup.mobs(s, id -> {
+                s.popup = PickerPopup.helpers(s, id -> {
                     t.summonMob = id;
                     s.state.touch();
                 });

@@ -14,6 +14,7 @@ import net.minecraftforge.event.entity.EntityAttributeCreationEvent;
 import net.minecraftforge.event.entity.EntityJoinLevelEvent;
 import net.minecraftforge.event.entity.player.PlayerEvent;
 import net.minecraftforge.event.entity.player.PlayerSleepInBedEvent;
+import net.minecraftforge.event.server.ServerAboutToStartEvent;
 import net.minecraftforge.event.server.ServerStartedEvent;
 import net.minecraftforge.event.server.ServerStoppedEvent;
 import net.minecraftforge.fml.DistExecutor;
@@ -36,6 +37,7 @@ public final class CharMobMaker {
         bus.addListener(this::commonSetup);
         bus.addListener(this::attributes);
         var game = MinecraftForge.EVENT_BUS;
+        game.addListener(this::serverAboutToStart);
         game.addListener(this::serverStarted);
         game.addListener(this::serverStopped);
         game.addListener(this::commands);
@@ -55,8 +57,13 @@ public final class CharMobMaker {
         e.put(ModContent.CUSTOM.get(), CustomMob.createAttributes().build());
     }
 
-    private void serverStarted(ServerStartedEvent e) {
+    // Loaded before the first chunks, so mobs waking up already know their designs.
+    private void serverAboutToStart(ServerAboutToStartEvent e) {
         DesignStore.start(e.getServer());
+    }
+
+    private void serverStarted(ServerStartedEvent e) {
+        DesignStore.startIfNeeded(e.getServer());
     }
 
     private void serverStopped(ServerStoppedEvent e) {

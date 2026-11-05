@@ -5,9 +5,6 @@ import com.mojang.blaze3d.systems.RenderSystem;
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.gui.Font;
 import net.minecraft.client.gui.GuiGraphics;
-import net.minecraft.network.chat.Component;
-import net.minecraft.network.chat.Style;
-import net.minecraft.resources.ResourceLocation;
 import net.minecraft.sounds.SoundEvents;
 import net.minecraft.client.resources.sounds.SimpleSoundInstance;
 import net.minecraft.world.item.ItemStack;
@@ -31,7 +28,6 @@ public final class Ui {
     public static final int PINK = 0xFFFF8FC7, PINK_SOFT = 0xFFFFB6DC, PINK_DEEP = 0xFFD6559C;
     public static final int TEXT = 0xFFF8EAF3, TEXT_DIM = 0xFFB9A0B6, TEXT_DARK = 0xFF2A1420;
     public static final int RED = 0xFFFF6B81, GREEN = 0xFF8CE07A, BLUE = 0xFF6FB5FF;
-    private static final Style FONT = Style.EMPTY.withFont(new ResourceLocation("uniform"));
 
     public final Draw draw = new Draw();
     public GuiGraphics g;
@@ -78,9 +74,8 @@ public final class Ui {
         Minecraft mc = Minecraft.getInstance();
         font = mc.font;
         Window w = mc.getWindow();
-        // whole steps so the font stays crisp
-        scale = Math.max(1f, Math.max(2f, (float) Math.floor(w.getHeight() / 450.0)));
-        if (w.getHeight() < 600) scale = 1.5f;
+        // whole steps only: the Minecraft font is sharp at a whole number of real pixels and nowhere else
+        scale = w.getHeight() >= 1350 ? (float) Math.floor(w.getHeight() / 450.0) : w.getHeight() >= 640 ? 2f : 1f;
         width = w.getWidth() / scale;
         height = w.getHeight() / scale;
         mx = testX != null ? testX : (float) (mc.mouseHandler.xpos() / scale);
@@ -153,8 +148,9 @@ public final class Ui {
             g.drawManaged(() -> {
                 for (Text t : list) {
                     g.pose().pushPose();
-                    g.pose().translate(t.x(), t.y(), 0f);
-                    g.drawString(font, Component.literal(t.s()).withStyle(FONT), 0, 0, t.colour(), false);
+                    // on a real pixel, or the letters come out uneven
+                    g.pose().translate(Math.round(t.x() * scale) / scale, Math.round(t.y() * scale) / scale, 0f);
+                    g.drawString(font, t.s(), 0, 0, t.colour(), false);
                     g.pose().popPose();
                 }
             });
@@ -322,7 +318,7 @@ public final class Ui {
     }
 
     public float width(String s) {
-        return font.width(Component.literal(s).withStyle(FONT));
+        return font.width(s);
     }
 
     // Shortens with dots to fit.
@@ -456,7 +452,7 @@ public final class Ui {
         draw.grad(x, y + (held ? 0.5f : 0f), x + w, y + h + (held ? 0.5f : 0f), r, top, bottom);
         if (hover && pink) draw.halo(x, y, x + w, y + h, r, 0x50FF8FC7, 5f);
         int colour = !enabled ? 0x80B9A0B6 : pink ? TEXT_DARK : TEXT;
-        textCentre(label, x + w / 2f, y + (h - 8f) / 2f + (held ? 0.5f : 0f), colour);
+        textCentre(fit(label, w - 4f), x + w / 2f, y + (h - 8f) / 2f + (held ? 0.5f : 0f), colour);
         if (clicked) sound();
         return clicked;
     }

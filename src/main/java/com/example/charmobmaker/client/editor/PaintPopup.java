@@ -20,7 +20,15 @@ final class PaintPopup implements EditorScreen.Popup {
     PaintPopup(EditorScreen s, Part part) {
         this.s = s;
         this.part = part;
-        cell = Math.max(0, Paints.cellFor(part, 0));
+        if (part.facePaint != null) {
+            for (int i = 0; i < Part.FACES && face < 0; i++) {
+                if (part.facePaint[i] >= 0) {
+                    face = i;
+                    cell = part.facePaint[i];
+                }
+            }
+        }
+        if (face < 0) cell = Math.max(0, part.paint);
     }
 
     @Override

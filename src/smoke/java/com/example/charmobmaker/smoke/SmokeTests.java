@@ -127,7 +127,6 @@ public final class SmokeTests {
         CustomMob m = spawn(h, id, 1, 1);
         Pig pig = h.spawn(EntityType.PIG, new BlockPos(7, 2, 1));
         pig.setNoAi(true);
-        pig.setInvulnerable(true);
         h.succeedWhen(() -> h.assertTrue(!h.getLevel().getEntitiesOfClass(AbstractArrow.class, m.getBoundingBox().inflate(16.0)).isEmpty(), "no arrow yet"));
     }
 
@@ -143,7 +142,6 @@ public final class SmokeTests {
         CustomMob m = spawn(h, id, 1, 1);
         Pig pig = h.spawn(EntityType.PIG, new BlockPos(7, 2, 1));
         pig.setNoAi(true);
-        pig.setInvulnerable(true);
         h.succeedWhen(() -> h.assertTrue(!h.getLevel().getEntitiesOfClass(SmallFireball.class, m.getBoundingBox().inflate(16.0)).isEmpty(), "no fireball yet"));
     }
 

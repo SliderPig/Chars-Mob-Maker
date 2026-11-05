@@ -3,6 +3,7 @@ package com.example.charmobmaker.client;
 import com.example.charmobmaker.Designs;
 import com.example.charmobmaker.ModContent;
 import com.example.charmobmaker.Net;
+import com.example.charmobmaker.client.editor.EditorState;
 import com.example.charmobmaker.client.render.BlockMeshes;
 import com.example.charmobmaker.client.render.CustomMobRenderer;
 import com.example.charmobmaker.client.render.MobLibrary;
@@ -58,6 +59,7 @@ public final class ClientSetup {
             RenderCache.clear();
             BlockMeshes.clear();
             MobLibrary.clear();
+            EditorState.get().rebuildNow();
         });
     }
 

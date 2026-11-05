@@ -68,6 +68,16 @@ final class PickerPopup implements EditorScreen.Popup {
         return new PickerPopup(s, "Choose a mob", rows, pick, false);
     }
 
+    // For helpers: made mobs as well as real ones.
+    static PickerPopup helpers(EditorScreen s, Consumer<String> pick) {
+        List<Row> rows = new ArrayList<>();
+        List<com.example.charmobmaker.model.Design> made = new ArrayList<>(com.example.charmobmaker.Designs.CLIENT.values());
+        made.sort((a, b) -> a.name.compareToIgnoreCase(b.name));
+        for (var d : made) rows.add(new Row("charmobmaker:" + d.id, d.name + " (made here)", ItemStack.EMPTY));
+        for (MobLibrary.Entry e : MobLibrary.all()) rows.add(new Row(e.id().toString(), e.name().getString(), e.egg()));
+        return new PickerPopup(s, "Choose a helper", rows, pick, false);
+    }
+
     static PickerPopup sounds(EditorScreen s, Consumer<String> pick) {
         List<Row> rows = new ArrayList<>();
         for (Map.Entry<net.minecraft.resources.ResourceKey<net.minecraft.sounds.SoundEvent>, net.minecraft.sounds.SoundEvent> e : ForgeRegistries.SOUND_EVENTS.getEntries()) {

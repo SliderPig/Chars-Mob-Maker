@@ -55,6 +55,7 @@ public final class EditorScreen extends Screen {
         Draw d = ui.draw;
         float w = ui.width, h = ui.height;
         d.grad(0f, 0f, w, h, 0f, Ui.BG_TOP, Ui.BG_BOTTOM);
+        d.rect(w * 0.3f, h * 0.25f, w * 0.7f, h * 0.7f, 60f, 0x18FF8FC7);
         d.halo(w * 0.3f, h * 0.25f, w * 0.7f, h * 0.7f, 60f, 0x18FF8FC7, 120f);
 
         float leftW = Math.max(132f, Math.min(176f, w * 0.215f));
@@ -178,9 +179,11 @@ public final class EditorScreen extends Screen {
         }
 
         // the right hand buttons
-        float bw = 38f, gap = 3f, bh = h - 6f;
+        float gap = 3f, bh = h - 6f, pad = 4f;
         float x = w - 6f;
-        float pad = 4f;
+        // narrow windows squeeze these rather than running into the tabs
+        float room = x - (tabsX + tabW * 3f + 8f) - 4f;
+        float bw = Math.max(26f, Math.min(38f, (room - 22f - pad * 2f - gap * 6f) / 6f));
         float width = 6f * (bw + gap) + 22f + pad * 2f;
         ui.panel(x - width, y, x, y + h, h / 2f);
         float bx = x - width + pad;

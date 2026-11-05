@@ -79,7 +79,7 @@ public final class ClientNet {
     }
 
     public static void saved(Net.SaveReply m) {
-        EditorState.get().onServerReply(m.ok(), m.id(), m.message());
+        EditorState.get().onServerReply(m.ok(), m.wasSave(), m.id(), m.message());
     }
 
     public static void play(Net.PlayClip m) {

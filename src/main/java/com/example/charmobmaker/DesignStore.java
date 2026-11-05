@@ -48,11 +48,16 @@ public final class DesignStore {
         }
         addStarters();
         loadAll();
+        CharMobMaker.LOG.info("[MobMaker] {} mob designs ready", Designs.SERVER.size());
+    }
+
+    public static void startIfNeeded(MinecraftServer s) {
+        if (server == s) return;
+        start(s);
         // mobs from chunks that loaded before this point
         for (ServerLevel level : s.getAllLevels()) {
             for (var e : level.getAllEntities()) if (e instanceof CustomMob m) m.applyDesign();
         }
-        CharMobMaker.LOG.info("[MobMaker] {} mob designs ready", Designs.SERVER.size());
     }
 
     public static void stop() {

@@ -60,6 +60,7 @@ public final class MobLibrary {
         public EntityRenderer<? super LivingEntity> renderer;
         public float width = 0.6f, height = 1.8f;
         public boolean brokenLive;
+        int lastTick = -1;
 
         Model(ResourceLocation id, ResourceLocation texture) {
             this.id = id;
@@ -297,8 +298,10 @@ public final class MobLibrary {
             if (host != null) {
                 m.dummy.tickCount = host.tickCount;
                 m.dummy.hurtTime = host.hurtTime;
-                m.dummy.walkAnimation.setSpeed(host.walkAnimation.speed(partial));
-                m.dummy.walkAnimation.update(0f, 1f);
+                if (m.lastTick != host.tickCount) {
+                    m.lastTick = host.tickCount;
+                    m.dummy.walkAnimation.update(host.walkAnimation.speed(), 1f);
+                }
             }
             m.renderer.render(m.dummy, 0f, partial, ps, buffers, light);
         } catch (Throwable t) {
