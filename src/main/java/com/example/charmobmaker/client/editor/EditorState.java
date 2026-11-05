@@ -35,6 +35,7 @@ public final class EditorState {
     public Compiled compiled;
     public final History history;
     public String selected = "";
+    public String lastAdded = ""; // the part just added: the next one goes beside it, not on it
     public final Set<String> collapsed = new HashSet<>();
     public Tab tab = Tab.BUILD;
     public Tool tool = Tool.MOVE;

@@ -24,6 +24,7 @@ import net.minecraftforge.client.model.data.ModelData;
 import net.minecraftforge.registries.ForgeRegistries;
 import org.joml.Matrix3f;
 import org.joml.Matrix4f;
+import org.joml.Vector3f;
 
 import java.util.ArrayList;
 import java.util.LinkedHashMap;
@@ -75,6 +76,7 @@ public final class Compiled {
     private final Matrix4f combined = new Matrix4f();
     private final Matrix3f normal = new Matrix3f();
     private final PoseStack liveStack = new PoseStack();
+    private float[] bounds;
 
     public Compiled(Design d) {
         design = d;
@@ -286,6 +288,35 @@ public final class Compiled {
                 e.mesh.emit(vc, combined, normal, colour, 0, LightTexture.FULL_BRIGHT, w.determinant3x3() < 0f);
             }
         }
+    }
+
+    // How far the mob reaches in its resting pose, in pixels: x0 y0 z0 x1 y1 z1. Used to aim the camera and fit the little pictures.
+    public float[] bounds() {
+        if (bounds != null) return bounds;
+        Matrix4f[] m = rig.newMatrices();
+        rig.pose(null, 0f, 0f, m);
+        float[] b = {Float.MAX_VALUE, Float.MAX_VALUE, Float.MAX_VALUE, -Float.MAX_VALUE, -Float.MAX_VALUE, -Float.MAX_VALUE};
+        Vector3f v = new Vector3f();
+        boolean any = false;
+        for (int i = 0; i < rig.size; i++) {
+            Part p = rig.parts[i];
+            if (p.hidden || p.kind == Part.Kind.CUBE && p.size[0] <= 0f && p.size[1] <= 0f && p.size[2] <= 0f) continue;
+            any = true;
+            float[] box = this.box[i];
+            for (int c = 0; c < 8; c++) {
+                v.set((c & 1) == 0 ? box[0] : box[3], (c & 2) == 0 ? box[1] : box[4], (c & 4) == 0 ? box[2] : box[5]);
+                m[i].transformPosition(v);
+                b[0] = Math.min(b[0], v.x);
+                b[1] = Math.min(b[1], v.y);
+                b[2] = Math.min(b[2], v.z);
+                b[3] = Math.max(b[3], v.x);
+                b[4] = Math.max(b[4], v.y);
+                b[5] = Math.max(b[5], v.z);
+            }
+        }
+        if (!any) b = new float[] {-8f, 0f, -8f, 8f, 16f, 8f};
+        bounds = b;
+        return b;
     }
 
     public boolean hasMesh(int part) {

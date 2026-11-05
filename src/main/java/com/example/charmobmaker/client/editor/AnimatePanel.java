@@ -109,14 +109,14 @@ final class AnimatePanel {
             ui.text(describe(c.name), left, y, Ui.TEXT_DIM);
             y += 11f;
         }
-        float len = ui.row("clip_len", left, y, width, "Long", 28f, c.length, 0.1f, 5f, Limits.MIN_CLIP, Limits.MAX_CLIP, 2);
+        float len = ui.row("clip_len", left, y, width, "Long", 34f, c.length, 0.1f, 5f, Limits.MIN_CLIP, Limits.MAX_CLIP, 2);
         if (len != c.length) {
             ClipTools.setLength(c, len);
             st.time = Math.min(st.time, c.length);
             st.changed();
         }
         y += 14f;
-        float speed = ui.row("clip_speed", left, y, width, "Speed", 28f, c.speed, 0.1f, 3f, 0.05f, 10f, 2);
+        float speed = ui.row("clip_speed", left, y, width, "Speed", 34f, c.speed, 0.1f, 3f, 0.05f, 10f, 2);
         if (speed != c.speed) {
             c.speed = speed;
             st.touch();
@@ -179,11 +179,11 @@ final class AnimatePanel {
 
     private static String describe(String clip) {
         return switch (clip) {
-            case "idle" -> "Plays while standing around";
-            case "walk" -> "Plays while moving, faster when faster";
-            case "attack" -> "Plays when it hits something";
-            case "hurt" -> "Plays when it takes a hit";
-            case "death" -> "Plays as it dies, up to 5 seconds";
+            case "idle" -> "Plays standing around";
+            case "walk" -> "Plays while it moves";
+            case "attack" -> "Plays when it hits";
+            case "hurt" -> "Plays when it gets hit";
+            case "death" -> "Plays as it dies, 5 s at most";
             default -> "";
         };
     }
@@ -240,8 +240,8 @@ final class AnimatePanel {
         Draw d = ui.draw;
         EditorState st = s.state;
         ui.panel(x0, y0, x1, y1, 9f);
-        clipChips(x0 + 6f, y0 + 5f, x1 - 170f);
-        transport(x1 - 166f, y0 + 4f, x1 - 6f);
+        clipChips(x0 + 6f, y0 + 5f, x1 - 186f);
+        transport(x1 - 182f, y0 + 4f, x1 - 6f);
         Clip c = st.clip();
         float labelW = Math.min(110f, (x1 - x0) * 0.17f);
         float laneX0 = x0 + 6f + labelW, laneX1 = x1 - 10f;
@@ -491,16 +491,16 @@ final class AnimatePanel {
         }
         float bx = px + bw + 6f;
         boolean hasPart = st.selectedPart() != null;
-        if (ui.button("t_key", bx, y, 24f, bh, "Key", false, hasPart)) addKey();
-        if (ui.over(bx, y, bx + 24f, y + bh)) ui.tooltip("Sets keys for this part at the playhead (K)");
-        bx += 26f;
-        if (ui.button("t_copy", bx, y, 26f, bh, "Copy", false, hasPart && st.clip() != null)) copy();
+        if (ui.button("t_key", bx, y, 26f, bh, "Key", false, hasPart)) addKey();
+        if (ui.over(bx, y, bx + 26f, y + bh)) ui.tooltip("Sets keys for this part at the playhead (K)");
         bx += 28f;
-        if (ui.button("t_paste", bx, y, 28f, bh, "Paste", false, hasPart && st.board != null)) paste();
-        bx += 30f;
+        if (ui.button("t_copy", bx, y, 32f, bh, "Copy", false, hasPart && st.clip() != null)) copy();
+        bx += 34f;
+        if (ui.button("t_paste", bx, y, 36f, bh, "Paste", false, hasPart && st.board != null)) paste();
+        bx += 38f;
         Part other = hasPart ? ClipTools.opposite(st.design, st.selectedPart()) : null;
-        if (ui.button("t_mirror", bx, y, 26f, bh, "Flip", false, other != null && st.clip() != null)) mirrorOnto(other);
-        if (ui.over(bx, y, bx + 26f, y + bh)) ui.tooltip("Copies this part's keys to the part on the other side, half a cycle later. That's how you get walking legs.");
+        if (ui.button("t_mirror", bx, y, 28f, bh, "Flip", false, other != null && st.clip() != null)) mirrorOnto(other);
+        if (ui.over(bx, y, bx + 28f, y + bh)) ui.tooltip("Copies this part's keys to the part on the other side, half a cycle later. That's how you get walking legs.");
     }
 
     void addKey() {

@@ -94,14 +94,14 @@ def cat(mid, name, wool, ear, eye, nose, face_bg, health, sounds_quiet=False):
         'BBBBBBBBBBBBBBBB',
     ], {'B': face_bg, 'E': eye, 'W': 0xFFFFFFFF, 'K': 0xFF16121A, 'N': nose, 'D': 0xFF4A3550}))
     tex = 'minecraft:block/' + wool
-    body = m.box('Body', (8, 8, 15), (0, 11, 0), texture=tex)
-    head = m.box('Head', (8, 8, 8), (0, 6, 9), body, texture=tex, head=True, facePaint=[0, -1, -1, -1, -1, -1], pivot=[0, -3, -3])
-    m.box('Left ear', (2.5, 3, 1.5), (2.6, 5.4, 0), head, colour=ear)
-    m.box('Right ear', (2.5, 3, 1.5), (-2.6, 5.4, 0), head, colour=ear)
+    body = m.box('Body', (6.5, 6.5, 14), (0, 8.75, 0), texture=tex)
+    head = m.box('Head', (8, 7.5, 7), (0, 5, 8.5), body, texture=tex, head=True, facePaint=[0, -1, -1, -1, -1, -1], pivot=[0, -3, -3])
+    m.box('Left ear', (2.6, 2.6, 1.2), (2.6, 4.9, -0.8), head, colour=ear)
+    m.box('Right ear', (2.6, 2.6, 1.2), (-2.6, 4.9, -0.8), head, colour=ear)
     legs = {}
-    for label, x, z in (('Left front leg', 2.6, 5.5), ('Right front leg', -2.6, 5.5), ('Left hind leg', 2.6, -5.5), ('Right hind leg', -2.6, -5.5)):
-        legs[label] = m.box(label, (2.8, 7, 2.8), (x, -7.5, z), body, texture=tex, pivot=[0, 3, 0])
-    tail = m.box('Tail', (2, 2, 9), (0, 3, -12), body, texture=tex, pivot=[0, 0, 4.5], rot=[28, 0, 0])
+    for label, x, z in (('Left front leg', 2.1, 5.2), ('Right front leg', -2.1, 5.2), ('Left hind leg', 2.1, -5.2), ('Right hind leg', -2.1, -5.2)):
+        legs[label] = m.box(label, (2.3, 6, 2.3), (x, -5.75, z), body, texture=tex, pivot=[0, 2.6, 0])
+    tail = m.box('Tail', (1.8, 1.8, 9), (0, 2.5, -10.5), body, texture=tex, pivot=[0, 0, 4.2], rot=[40, 0, 0])
     m.clip('idle', 3.0)
     m.key('idle', tail, 'rot', 0, 0, -16, 0)
     m.key('idle', tail, 'rot', 1.5, 0, 16, 0)
@@ -142,7 +142,7 @@ def cat(mid, name, wool, ear, eye, nose, face_bg, health, sounds_quiet=False):
     m.key('death', body, 'pos', 0.8, 0, -7, 0)
     m.key('death', head, 'rot', 0.3, 0, 0, 0)
     m.key('death', head, 'rot', 1.0, 30, 0, 0)
-    m.stats = {'health': health, 'speed': 0.3, 'damage': 2, 'width': 0.6, 'height': 0.95, 'xp': 3, 'mood': 'neutral', 'targets': ['player'],
+    m.stats = {'health': health, 'speed': 0.3, 'damage': 2, 'width': 0.7, 'height': 0.95, 'xp': 3, 'mood': 'neutral', 'targets': ['player'],
                'attack': 'melee', 'attackRate': 1, 'leap': True, 'abilityCooldown': 6,
                'drops': [{'item': 'minecraft:' + wool, 'min': 0, 'max': 2, 'chance': 1}, {'item': 'minecraft:string', 'min': 0, 'max': 1, 'chance': 0.5}],
                'sounds': {'ambient': 'minecraft:entity.cat.ambient', 'hurt': 'minecraft:entity.cat.hurt', 'death': 'minecraft:entity.cat.death', 'attack': 'minecraft:entity.cat.hiss', 'step': 'minecraft:block.wool.step'},
@@ -279,7 +279,7 @@ def bone_knight():
     rarm = m.bone('Right arm', sk, 'right_arm', (-5, 22, 0))
     lleg = m.bone('Left leg', sk, 'left_leg', (2, 12, 0))
     rleg = m.bone('Right leg', sk, 'right_leg', (-2, 12, 0))
-    sword = m.part('Sword', 'item', (-0.6, -10, 1), rarm, item='minecraft:diamond_sword', display='third_person_right_hand', rot=[180, 0, 0])
+    sword = m.part('Sword', 'item', (1, -10, 2), rarm, item='minecraft:diamond_sword', display='third_person_right_hand', rot=[-90, 180, 0])
     m.clip('idle', 3.0)
     m.key('idle', rarm, 'rot', 0, -8, 0, 0)
     m.key('idle', rarm, 'rot', 1.5, -12, 0, 0)

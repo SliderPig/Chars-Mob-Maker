@@ -74,5 +74,6 @@ public final class ClientSetup {
     private static void loggedOut(ClientPlayerNetworkEvent.LoggingOut e) {
         ClientNet.reset();
         MobLibrary.worldChanged();
+        EditorState.get().rebuildNow();
     }
 }

@@ -135,8 +135,8 @@ final class BuildPanel {
         BlockState state = BlockMeshes.parse(p.block);
         ItemStack icon = state == null ? ItemStack.EMPTY : new ItemStack(state.getBlock());
         ui.item(icon, left, y, 14f);
-        ui.text(ui.fit(state == null ? "Unknown: " + p.block : state.getBlock().getName().getString(), width - 56f), left + 17f, y + 3f, Ui.TEXT);
-        if (ui.button("block_change", left + width - 38f, y, 38f, 14f, "Change")) {
+        ui.text(ui.fit(state == null ? "Unknown: " + p.block : state.getBlock().getName().getString(), width - 66f), left + 17f, y + 3f, Ui.TEXT);
+        if (ui.button("block_change", left + width - 46f, y, 46f, 14f, "Change")) {
             s.popup = PickerPopup.blocks(s, id -> {
                 p.block = id;
                 s.state.changed();
@@ -183,8 +183,8 @@ final class BuildPanel {
         Ui ui = s.ui;
         section("From a mob");
         MobLibrary.Model m = MobLibrary.get(p.mob);
-        ui.text(ui.fit(m == null ? "Unknown: " + p.mob : MobLibrary.pretty(m.id.getPath()), width - 42f), left, y + 3f, Ui.TEXT);
-        if (ui.button("mob_change", left + width - 38f, y, 38f, 14f, "Change")) s.popup = new AddPartPopup(s, p);
+        ui.text(ui.fit(m == null ? "Unknown: " + p.mob : MobLibrary.pretty(m.id.getPath()), width - 50f), left, y + 3f, Ui.TEXT);
+        if (ui.button("mob_change", left + width - 46f, y, 46f, 14f, "Change")) s.popup = new AddPartPopup(s, p);
         y += 18f;
         if (m != null) {
             MobLibrary.Bone b = m.byPath.get(p.bone);
@@ -221,8 +221,8 @@ final class BuildPanel {
         var it = rl == null ? null : ForgeRegistries.ITEMS.getValue(rl);
         ItemStack icon = it == null ? ItemStack.EMPTY : new ItemStack(it);
         ui.item(icon, left, y, 14f);
-        ui.text(ui.fit(icon.isEmpty() ? "Unknown" : icon.getHoverName().getString(), width - 56f), left + 17f, y + 3f, Ui.TEXT);
-        if (ui.button("item_change", left + width - 38f, y, 38f, 14f, "Change")) {
+        ui.text(ui.fit(icon.isEmpty() ? "Unknown" : icon.getHoverName().getString(), width - 66f), left + 17f, y + 3f, Ui.TEXT);
+        if (ui.button("item_change", left + width - 46f, y, 46f, 14f, "Change")) {
             s.popup = PickerPopup.items(s, id -> {
                 p.item = id;
                 s.state.changed();
@@ -237,7 +237,16 @@ final class BuildPanel {
                 s.state.changed();
             }
         }
-        y += 31f;
+        y += 30f;
+        if (ui.button("item_hold", left, y, width, 13f, "Set it up like held in a hand")) {
+            // what the game itself does when a mob holds something in a raised arm
+            boolean right = !p.display.contains("left");
+            p.pos = new float[] {right ? 1f : -1f, -10f, 2f};
+            p.rot = new float[] {-90f, 180f, 0f};
+            s.state.changed();
+        }
+        if (ui.over(left, y, left + width, y + 13f)) ui.tooltip("For an item hanging from an arm");
+        y += 17f;
     }
 
     private void transform(Part p) {

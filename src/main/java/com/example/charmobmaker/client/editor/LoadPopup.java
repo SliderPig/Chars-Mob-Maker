@@ -43,16 +43,18 @@ final class LoadPopup implements EditorScreen.Popup {
         }
 
         // starting something and sharing
-        float bx = x0 + 42f, bh = 14f, by = y0 + 6f;
-        if (ui.accent("new_mob", bx, by, 42f, bh, "New")) {
+        float bx = x0 + 44f, bh = 14f, by = y0 + 6f;
+        float bw = textButton(bx, "New");
+        if (ui.accent("new_mob", bx, by, bw, bh, "New")) {
             st.commit();
             st.load(new Design());
             s.viewport.aimAt(st.compiled());
             s.popup = null;
             return;
         }
-        bx += 44f;
-        if (ui.button("copy_mob", bx, by, 58f, bh, "Save a copy")) {
+        bx += bw + 2f;
+        bw = textButton(bx, "Save a copy");
+        if (ui.button("copy_mob", bx, by, bw, bh, "Save a copy")) {
             Design copy = st.design.copy();
             copy.id = "";
             copy.owner = "";
@@ -61,8 +63,9 @@ final class LoadPopup implements EditorScreen.Popup {
             s.popup = null;
             return;
         }
-        bx += 60f;
-        if (ui.button("export_mob", bx, by, 46f, bh, "To a file")) {
+        bx += bw + 2f;
+        bw = textButton(bx, "To a file");
+        if (ui.button("export_mob", bx, by, bw, bh, "To a file")) {
             try {
                 Path p = DesignFiles.export(st.design);
                 st.say("Saved as " + p.getFileName(), false);
@@ -71,11 +74,13 @@ final class LoadPopup implements EditorScreen.Popup {
                 st.say("Couldn't write the file", true);
             }
         }
-        bx += 48f;
-        if (ui.button("copy_text", bx, by, 54f, bh, "Copy text")) s.copyToClipboard();
-        if (ui.over(bx, by, bx + 54f, by + bh)) ui.tooltip("Copies the mob as text, to send to someone");
-        bx += 56f;
-        if (ui.button("paste_text", bx, by, 58f, bh, "Paste text")) {
+        bx += bw + 2f;
+        bw = textButton(bx, "Copy text");
+        if (ui.button("copy_text", bx, by, bw, bh, "Copy text")) s.copyToClipboard();
+        if (ui.over(bx, by, bx + bw, by + bh)) ui.tooltip("Copies the mob as text, to send to someone");
+        bx += bw + 2f;
+        bw = textButton(bx, "Paste text");
+        if (ui.button("paste_text", bx, by, bw, bh, "Paste text")) {
             try {
                 Design d = DesignJson.read(Minecraft.getInstance().keyboardHandler.getClipboard());
                 DesignRules.tidy(d);
@@ -98,6 +103,10 @@ final class LoadPopup implements EditorScreen.Popup {
         if (outside) s.popup = null;
         ui.pressed = false;
         ui.wheel = 0f;
+    }
+
+    private float textButton(float x, String label) {
+        return s.ui.width(label) + 12f;
     }
 
     private void worldList(float x0, float y0, float x1, float y1) {

@@ -234,9 +234,22 @@ public final class MobLibrary {
             addBone(model, null, "root", "root", root, 0, 24f);
             return;
         }
-        for (Map.Entry<String, ModelPart> e : children(root).entrySet()) {
+        for (Map.Entry<String, ModelPart> e : inOrder(children(root))) {
             addBone(model, null, e.getKey(), e.getKey(), e.getValue(), 0, 24f);
         }
+    }
+
+    // Head first, then the body, then the rest by name, so left and right sit together.
+    private static List<Map.Entry<String, ModelPart>> inOrder(Map<String, ModelPart> parts) {
+        List<Map.Entry<String, ModelPart>> list = new ArrayList<>(parts.entrySet());
+        list.sort(Comparator.<Map.Entry<String, ModelPart>>comparingInt(e -> rank(e.getKey())).thenComparing(Map.Entry::getKey));
+        return list;
+    }
+
+    private static int rank(String name) {
+        if (name.contains("head")) return 0;
+        if (name.contains("body") || name.contains("torso")) return 1;
+        return 2;
     }
 
     private static Bone addBone(Model model, Bone parent, String path, String key, ModelPart part, int depth, float ground) {
@@ -252,7 +265,7 @@ public final class MobLibrary {
         if (parent == null) model.tops.add(b);
         else parent.kids.add(b);
         if (depth < 12) {
-            for (Map.Entry<String, ModelPart> e : children(part).entrySet()) {
+            for (Map.Entry<String, ModelPart> e : inOrder(children(part))) {
                 addBone(model, b, path + "/" + e.getKey(), e.getKey(), e.getValue(), depth + 1, 0f);
             }
         }

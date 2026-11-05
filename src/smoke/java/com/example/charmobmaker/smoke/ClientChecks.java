@@ -171,6 +171,51 @@ public final class ClientChecks {
         later(2, () -> mouse(800f, 225f));
         shot(10, "03_pink_cat");
 
+        // a look at each of the others from the front
+        for (String id : new String[] {"block_golem", "chicken_headed_cow", "bone_knight", "magma_eye", "inky"}) {
+            click(3, "load");
+            click(5, "load_" + id);
+            later(2, () -> mouse(800f, 225f));
+            shot(6, "03_starter_" + id);
+            click(1, "view_front");
+            shot(4, "03_starter_" + id + "_front");
+            click(1, "view_side");
+            shot(4, "03_starter_" + id + "_side");
+        }
+        // sharing: to a file and back, and a Blockbench file
+        click(3, "load");
+        click(5, "load_pink_cat");
+        click(3, "view_front");
+        shot(4, "03_pink_cat_front");
+        click(3, "load");
+        click(4, "export_mob");
+        check(3, "a file was written", () -> {
+            try {
+                return java.nio.file.Files.exists(com.example.charmobmaker.client.editor.DesignFiles.folder().resolve("pink_cat.json"));
+            } catch (java.io.IOException e) {
+                return false;
+            }
+        });
+        later(1, () -> {
+            try {
+                java.nio.file.Files.writeString(com.example.charmobmaker.client.editor.DesignFiles.folder().resolve("tester.bbmodel"), "{\"name\":\"tester\",\"elements\":[{\"name\":\"box\",\"uuid\":\"e1\",\"from\":[-4,0,-4],\"to\":[4,8,4]}],\"outliner\":[\"e1\"]}");
+            } catch (java.io.IOException e) {
+                problems++;
+            }
+        });
+        click(2, "popup_close");
+        click(3, "load");
+        shot(5, "03b_files_listed");
+        click(3, "file_tester.bbmodel");
+        check(4, "a Blockbench file opened", () -> EditorState.get().design.name.equals("tester") && EditorState.get().design.parts.size() == 1 && EditorState.get().design.id.isEmpty());
+        click(3, "load");
+        click(5, "file_pink_cat.json");
+        check(4, "the mob file opened again as a new mob", () -> EditorState.get().design.name.equals("Pink Cat") && EditorState.get().design.parts.size() == 9 && EditorState.get().design.id.isEmpty());
+        click(3, "load");
+        click(5, "load_pink_cat");
+        later(2, () -> mouse(800f, 225f));
+        check(1, "pink cat loaded again", () -> "pink_cat".equals(EditorState.get().design.id));
+
         // selecting a part: arrows, glow, numbers
         later(2, () -> EditorState.get().selected = EditorState.get().design.parts.get(1).id);
         shot(6, "04_selected_head");
@@ -251,6 +296,15 @@ public final class ClientChecks {
         check(4, "whole pig added", () -> EditorState.get().design.parts.stream().anyMatch(q -> "minecraft:pig".equals(q.mob) && q.bone.isEmpty()));
         shot(6, "17_whole_pig");
 
+        click(3, "view_fit");
+        shot(4, "17b_fitted");
+        // undo by keys
+        later(2, () -> {
+            int before = EditorState.get().design.parts.size();
+            editor().keyPressed(org.lwjgl.glfw.GLFW.GLFW_KEY_Z, 0, org.lwjgl.glfw.GLFW.GLFW_MOD_CONTROL);
+            lastCount = before;
+        });
+        check(3, "Ctrl+Z undid the last part", () -> EditorState.get().design.parts.size() == lastCount - 1);
         // the Pink Cat again for the rest
         click(3, "load");
         click(6, "load_pink_cat");
@@ -317,6 +371,21 @@ public final class ClientChecks {
         check(4, "new clip made", () -> EditorState.get().design.clip("clip_1") != null);
         shot(5, "28_custom_clip");
 
+        // other window sizes: a small laptop and a big screen
+        later(3, () -> Minecraft.getInstance().getWindow().setWindowed(1280, 720));
+        shot(10, "28b_small_animate");
+        click(2, "tab_stats");
+        shot(4, "28c_small_stats");
+        click(2, "tab_build");
+        later(2, () -> EditorState.get().selected = EditorState.get().design.parts.get(0).id);
+        shot(4, "28d_small_build");
+        later(3, () -> Minecraft.getInstance().getWindow().setWindowed(1920, 1080));
+        shot(10, "28e_big_build");
+        click(2, "tab_animate");
+        shot(4, "28f_big_animate");
+        later(3, () -> Minecraft.getInstance().getWindow().setWindowed(1600, 900));
+        later(10, () -> {});
+
         // save changes to a copy and let the server take it
         later(2, () -> {
             EditorState st = EditorState.get();
@@ -361,6 +430,9 @@ public final class ClientChecks {
             p.connection.teleport(p.getX(), p.getY() + 1, p.getZ(), -90f, 12f);
         });
         shot(30, "30_world_lineup");
+        server(1, p -> p.connection.teleport(p.getX(), p.getY(), p.getZ(), -135f, 35f));
+        shot(6, "30b_bench_close");
+        server(1, p -> p.connection.teleport(p.getX(), p.getY(), p.getZ(), -90f, 12f));
         check(1, "hitbox came from the design", () -> {
             for (CustomMob m : Minecraft.getInstance().level.getEntitiesOfClass(CustomMob.class, Minecraft.getInstance().player.getBoundingBox().inflate(32.0))) {
                 if ("block_golem".equals(m.designId())) return Math.abs(m.getBbHeight() - 2.8f) < 0.01f;
@@ -396,6 +468,7 @@ public final class ClientChecks {
     }
 
     private static float lastX, lastY;
+    private static int lastCount;
 
     private static void dragArrow() {
         EditorScreen e = editor();
@@ -432,6 +505,8 @@ public final class ClientChecks {
         if (titleSeen && !created) {
             created = true;
             mc.options.pauseOnLostFocus = false;
+            mc.options.tutorialStep = net.minecraft.client.tutorial.TutorialSteps.NONE;
+            mc.getTutorial().setStep(net.minecraft.client.tutorial.TutorialSteps.NONE);
             mc.options.renderDistance().set(6);
             mc.options.guiScale().set(2);
             mc.createWorldOpenFlows().createFreshLevel("smoke", new LevelSettings("smoke", GameType.CREATIVE, false, Difficulty.NORMAL, true, new GameRules(), WorldDataConfiguration.DEFAULT),

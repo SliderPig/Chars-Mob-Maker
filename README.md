@@ -24,8 +24,8 @@ The mob stands in the middle. Drag on empty space to look around, **mouse wheel*
   - **Box**: size it, colour it, give it a block's texture, or paint it yourself (16 x 16 cells, a different one per side if you like).
   - **Block**: any block, with its real model. Stairs, fences, glass, chests, anything.
   - **Mob part**: pick a mob, then a body part with a live picture of it: the zombie's head, the cow's body, the chicken's legs. **Whole mob** adds the whole thing; **Add all its parts, separately** lays out every part in place so you can swap one out (that's how the Chicken-Headed Cow got made).
-  - **Item**: a sword, a torch, whatever, held like an item.
-- The list on the left is the tree of parts. New parts hang from the selected one. **Drag a row onto another** to hang it there (it stays where it is on screen), or onto the empty bit of the list to free it. The little eye hides a part while you work. Click the small arrow to fold a branch.
+  - **Item**: a sword, a torch, whatever. Hang it from an arm and press **Set it up like held in a hand**.
+- The list on the left is the tree of parts. New parts hang from the selected one (the Add window says where); right after adding one, the next goes beside it. **Drag a row onto another** to hang it there (it stays where it is on screen), or onto the empty bit of the list to free it. The little eye hides a part while you work. Click the small arrow to fold a branch.
 - **Copy** duplicates a part with everything hanging off it. **Mirror** makes a copy on the other side of the mob (Left arm becomes Right arm). **Delete** deletes.
 - Click a part on the mob itself to select it; it glows pink. Drag the coloured arrows to move it; the Move, Turn and Size buttons above the mob (or keys 1, 2, 3) change what the handles do. Hold Shift for neat steps.
 - The right panel has every number: where it sits, turn, size, and the **pivot**, which is the point it turns from (the shoulder of an arm). Type a number or use the slider.

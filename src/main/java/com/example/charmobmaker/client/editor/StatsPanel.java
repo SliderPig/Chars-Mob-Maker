@@ -93,12 +93,10 @@ final class StatsPanel {
         float start = y;
         section("Mood");
         Stats.Mood[] moods = Stats.Mood.values();
-        float cw = width / 3f;
-        for (int i = 0; i < 3; i++) {
-            if (ui.chip("mood_" + i, left + i * cw, y, cw - 2f, 13f, moods[i].label, t.mood == moods[i])) {
-                t.mood = moods[i];
-                s.state.touch();
-            }
+        int mood = ui.chips("mood", left, y, width, 13f, new String[] {moods[0].label, moods[1].label, moods[2].label}, t.mood.ordinal());
+        if (mood >= 0) {
+            t.mood = moods[mood];
+            s.state.touch();
         }
         y += 15f;
         ui.text(t.mood == Stats.Mood.HOSTILE ? "Goes after its targets" : t.mood == Stats.Mood.NEUTRAL ? "Only fights back when hit" : "Runs away when hit", left, y, Ui.TEXT_DIM);
@@ -156,12 +154,10 @@ final class StatsPanel {
         Ui ui = s.ui;
         section("Attack");
         Stats.Attack[] kinds = Stats.Attack.values();
-        float cw = width / 4f;
-        for (int i = 0; i < 4; i++) {
-            if (ui.chip("attack_" + i, left + i * cw, y, cw - 2f, 13f, kinds[i].label, t.attack == kinds[i])) {
-                t.attack = kinds[i];
-                s.state.touch();
-            }
+        int kind = ui.chips("attack", left, y, width, 13f, new String[] {kinds[0].label, kinds[1].label, kinds[2].label, kinds[3].label}, t.attack.ordinal());
+        if (kind >= 0) {
+            t.attack = kinds[kind];
+            s.state.touch();
         }
         y += 17f;
         section("Abilities");
@@ -303,7 +299,7 @@ final class StatsPanel {
             s.state.touch();
         }
         if (!on) return;
-        t.spawnRate = Math.round(num("spawn_rate", "How often", t.spawnRate, 1f, 100f, 1f, 100f, 0));
+        t.spawnRate = Math.round(num("spawn_rate", "Chance", t.spawnRate, 1f, 100f, 1f, 100f, 0));
         t.spawnGroup = Math.round(num("spawn_group", "Group", t.spawnGroup, 1f, 8f, 1f, 8f, 0));
         t.spawnMaxNearby = Math.round(num("spawn_max", "At most", t.spawnMaxNearby, 1f, 32f, 1f, 32f, 0));
         boolean night = ui.toggle("spawn_night", left, y, width, "Only in the dark", t.spawnNightOnly);
@@ -343,6 +339,7 @@ final class StatsPanel {
                 int current = row == 0 ? t.eggBase : t.eggSpots;
                 if (current == c) ui.draw.ring(cx, cy, dot + 1.25f, 0.75f, Ui.PINK_SOFT);
                 ui.draw.circle(cx, cy, dot, c);
+                ui.draw.ring(cx, cy, dot, 0.5f, 0x40FFFFFF);
                 if (ui.click("egg_" + row + "_" + i, cx - dot, cy - dot, cx + dot, cy + dot)) {
                     if (row == 0) t.eggBase = c;
                     else t.eggSpots = c;

@@ -72,11 +72,11 @@ final class Tiles {
     static void design(Ui ui, float cx, float cy, float box, Compiled c) {
         if (c == null) return;
         ui.later(() -> {
-            float reach = Math.max(8f, c.rig.reach());
-            float h = c.design.stats.height * 16f;
-            float scale = box / (Math.max(reach, h) * 1.3f);
-            PoseStack ps = place(ui, cx, cy, scale, 215f + spin());
-            ps.translate(0f, -Math.min(reach, h) * 0.5f, 0f);
+            float[] b = c.bounds();
+            float span = Math.max(1f, Math.max(b[3] - b[0], Math.max(b[4] - b[1], b[5] - b[2])));
+            float scale = box / (span * 1.45f);
+            PoseStack ps = place(ui, cx, cy, scale, 25f + spin());
+            ps.translate(-(b[0] + b[3]) / 2f, -(b[1] + b[4]) / 2f, -(b[2] + b[5]) / 2f);
             Lighting.setupForEntityInInventory();
             c.rig.pose(null, 0f, 0f, c.world);
             c.draw(ps, ui.g.bufferSource(), LightTexture.FULL_BRIGHT, OverlayTexture.NO_OVERLAY, ui.partial, null);

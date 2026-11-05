@@ -40,7 +40,7 @@ final class PaintPopup implements EditorScreen.Popup {
             s.popup = null;
             return;
         }
-        float w = 268f, h = Math.min(ui.height - 40f, 376f);
+        float w = 292f, h = Math.min(ui.height - 16f, 410f);
         float x0 = 10f, y0 = (ui.height - h) / 2f, x1 = x0 + w, y1 = y0 + h;
         boolean outside = ui.pressed && !(ui.mx >= x0 && ui.mx < x1 && ui.my >= y0 && ui.my < y1);
         ui.panel(x0, y0, x1, y1, 12f);
@@ -92,7 +92,7 @@ final class PaintPopup implements EditorScreen.Popup {
         y += (Math.min(Limits.MAX_PAINTS, nextIndex + 1) + 7) / 8 * (tiny + 3f) + 2f;
 
         // the canvas
-        float room = Math.min(w - 24f, y1 - y - 104f);
+        float room = Math.min(w - 40f, y1 - y - 112f);
         float size = (float) Math.floor(room / 16f) * 16f;
         float px = x0 + (w - size) / 2f, py = y;
         float step = size / 16f;
@@ -142,7 +142,7 @@ final class PaintPopup implements EditorScreen.Popup {
         for (int i = 0; i < TOOLS.length; i++) {
             if (ui.chip("tool_paint_" + i, x0 + 10f + i * (tw + 2f), y, tw, 13f, TOOLS[i], tool == i)) tool = i;
         }
-        if (ui.button("use_cell", x1 - 92f, y, 82f, 13f, face < 0 ? "Use on all sides" : "Use on this side")) applyToPart();
+        if (ui.button("use_cell", x1 - 112f, y, 102f, 13f, face < 0 ? "Use on all sides" : "Use on this side")) applyToPart();
         y += 18f;
         float dot = 5f, stepD = (w - 24f) / 8f;
         for (int i = 0; i < BuildPanel.SWATCHES.length; i++) {
@@ -156,10 +156,11 @@ final class PaintPopup implements EditorScreen.Popup {
         }
         y += 27f;
         int r = (colour >> 16) & 255, g = (colour >> 8) & 255, b = colour & 255;
-        float third = (w - 24f) / 3f;
-        r = Math.round(ui.row("paint_r", x0 + 12f, y, third - 3f, "R", 8f, r, 0f, 255f, 0f, 255f, 0));
-        g = Math.round(ui.row("paint_g", x0 + 12f + third, y, third - 3f, "G", 8f, g, 0f, 255f, 0f, 255f, 0));
-        b = Math.round(ui.row("paint_b", x0 + 12f + third * 2f, y, third - 3f, "B", 8f, b, 0f, 255f, 0f, 255f, 0));
+        r = Math.round(ui.row("paint_r", x0 + 12f, y, w - 24f, "R", 10f, r, 0f, 255f, 0f, 255f, 0));
+        y += 13f;
+        g = Math.round(ui.row("paint_g", x0 + 12f, y, w - 24f, "G", 10f, g, 0f, 255f, 0f, 255f, 0));
+        y += 13f;
+        b = Math.round(ui.row("paint_b", x0 + 12f, y, w - 24f, "B", 10f, b, 0f, 255f, 0f, 255f, 0));
         colour = 0xFF000000 | (r << 16) | (g << 8) | b;
         if (!outside) ui.pressed = false;
         if (!outside) ui.wheel = 0f;

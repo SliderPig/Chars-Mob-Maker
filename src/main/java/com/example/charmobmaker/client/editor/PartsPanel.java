@@ -147,6 +147,7 @@ final class PartsPanel {
         }
         if (ui.click("row_" + p.id, x0, y, x1, y + h - 1f)) {
             st.selected = p.id;
+            st.lastAdded = "";
             st.key = null;
             st.keyTrack = null;
             dragging = p.id;

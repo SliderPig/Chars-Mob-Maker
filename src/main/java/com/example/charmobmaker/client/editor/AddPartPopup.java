@@ -84,6 +84,10 @@ final class AddPartPopup implements EditorScreen.Popup {
         ui.flush();
         ui.claim(0f, 0f, ui.width, ui.height);
         ui.text(changing == null ? "Add a part" : "Choose from another mob", x0 + 12f, y0 + 9f, Ui.TEXT);
+        if (changing == null) {
+            Part on = s.state.design.part(parentForNew());
+            ui.textRight(ui.fit(on == null ? "Goes on the mob" : "Goes on " + on.name, 110f), x1 - 32f, y0 + 9f, Ui.TEXT_DIM);
+        }
         if (ui.button("popup_close", x1 - 26f, y0 + 6f, 20f, 14f, "X")) {
             s.popup = null;
             return;
@@ -91,7 +95,7 @@ final class AddPartPopup implements EditorScreen.Popup {
         if (changing == null) {
             String[] names = {"Box", "Block", "Mob part", "Item"};
             Tab[] tabs = Tab.values();
-            float tw = 58f, tx = x0 + 90f;
+            float tw = 52f, tx = x0 + 80f;
             for (int i = 0; i < 4; i++) {
                 if (ui.chip("add_tab_" + tabs[i].name().toLowerCase(), tx + i * (tw + 2f), y0 + 6f, tw, 14f, names[i], tab == tabs[i])) {
                     tab = tabs[i];
@@ -195,12 +199,18 @@ final class AddPartPopup implements EditorScreen.Popup {
         place(p);
     }
 
-    // New parts hang from the selected one.
+    // New parts hang from the selected one, or go beside the part you only just added.
     private void place(Part p) {
-        Part sel = s.state.selectedPart();
-        p.parent = sel == null ? "" : sel.id;
+        p.parent = parentForNew();
         p.id = "new";
         s.addParts(new ArrayList<>(List.of(p)));
+    }
+
+    private String parentForNew() {
+        EditorState st = s.state;
+        Part sel = st.selectedPart();
+        if (sel == null) return "";
+        return sel.id.equals(st.lastAdded) ? sel.parent : sel.id;
     }
 
     private void mobTab(float x0, float y0, float x1, float y1) {
@@ -240,12 +250,12 @@ final class AddPartPopup implements EditorScreen.Popup {
             ui.textCentre("Pick a mob to see its parts", (x0 + x1) / 2f, y0 + 24f, Ui.TEXT_DIM);
             return;
         }
-        float tile = 52f, gap = 4f;
+        float tile = 56f, gap = 5f, label = 20f;
         int across = Math.max(1, (int) ((x1 - x0 - 10f) / (tile + gap)));
         int count = m.all.size() + 1;
         int rows = (count + across - 1) / across;
         float headH = changing == null ? 22f : 4f;
-        float scroll = ui.scroll("add_bones", x0, y0, x1, y1, rows * (tile + gap + 10f) + headH + 6f);
+        float scroll = ui.scroll("add_bones", x0, y0, x1, y1, rows * (tile + gap + label) + headH + 6f);
         ui.pushClip(x0, y0 + 1f, x1, y1 - 1f);
         float tx = x0 + 6f, ty = y0 + 4f - scroll;
         if (changing == null) {
@@ -259,11 +269,11 @@ final class AddPartPopup implements EditorScreen.Popup {
             ty += headH;
         }
         for (int i = 0; i < count; i++) {
-            float x = tx + (i % across) * (tile + gap), y = ty + (i / across) * (tile + gap + 10f);
-            if (y + tile + 10f < y0 || y > y1) continue;
+            float x = tx + (i % across) * (tile + gap), y = ty + (i / across) * (tile + gap + label);
+            if (y + tile + label < y0 || y > y1) continue;
             boolean whole = i == 0;
             MobLibrary.Bone b = whole ? null : m.all.get(i - 1);
-            boolean hover = ui.over(x, y, x + tile, y + tile + 9f);
+            boolean hover = ui.over(x, y, x + tile, y + tile + label);
             ui.draw.rect(x, y, x + tile, y + tile, 7f, hover ? 0xFF5A3E6C : 0xFF2C1D36);
             ui.draw.border(x, y, x + tile, y + tile, 7f, 0.5f, hover ? Ui.PINK : 0x20FFFFFF);
             if (whole) {
@@ -272,9 +282,12 @@ final class AddPartPopup implements EditorScreen.Popup {
                 Tiles.mesh(ui, x + tile / 2f, y + tile / 2f, tile, b.whole, m.texture);
             }
             String name = whole ? "Whole mob" : b.name;
-            ui.textCentre(ui.fit(name, tile + 2f), x + tile / 2f, y + tile + 1f, hover ? 0xFFFFFFFF : Ui.TEXT_DIM);
+            List<String> lines = ui.wrap(name, tile + 3f);
+            for (int n = 0; n < Math.min(2, lines.size()); n++) {
+                ui.textCentre(ui.fit(lines.get(n), tile + 3f), x + tile / 2f, y + tile + 1f + n * 9f, hover ? 0xFFFFFFFF : Ui.TEXT_DIM);
+            }
             if (hover && !whole) ui.tooltip(b.path);
-            if (ui.click("bone_" + (whole ? "whole" : b.path), x, y, x + tile, y + tile + 9f)) {
+            if (ui.click("bone_" + (whole ? "whole" : b.path), x, y, x + tile, y + tile + label)) {
                 pickBone(m, b);
                 s.popup = null;
             }

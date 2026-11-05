@@ -55,8 +55,7 @@ public final class EditorScreen extends Screen {
         Draw d = ui.draw;
         float w = ui.width, h = ui.height;
         d.grad(0f, 0f, w, h, 0f, Ui.BG_TOP, Ui.BG_BOTTOM);
-        d.rect(w * 0.3f, h * 0.25f, w * 0.7f, h * 0.7f, 60f, 0x18FF8FC7);
-        d.halo(w * 0.3f, h * 0.25f, w * 0.7f, h * 0.7f, 60f, 0x18FF8FC7, 120f);
+        pool(d, w * 0.5f, h * 0.5f, w * 0.62f, h * 0.72f, 0x22FF8FC7);
 
         float leftW = Math.max(132f, Math.min(176f, w * 0.215f));
         float rightW = Math.max(150f, Math.min(196f, w * 0.245f));
@@ -70,7 +69,7 @@ public final class EditorScreen extends Screen {
             viewport.aimAt(c);
             aimed = true;
         }
-        viewport.setup(ui, freeCx, freeCy);
+        viewport.setup(ui, freeCx, freeCy, bottom - top - barH);
         pose(c);
         viewport.backdrop(ui);
         int glow = state.tab == EditorState.Tab.STATS ? -1 : c.rig.indexOf(state.selected);
@@ -113,6 +112,15 @@ public final class EditorScreen extends Screen {
         if (!ui.mouseIsDown() && !ui.typing()) state.commit();
     }
 
+    // A soft round pool of light, for depth behind everything.
+    private static void pool(Draw d, float cx, float cy, float rx, float ry, int colour) {
+        int n = 48;
+        for (int i = 0; i < n; i++) {
+            double a = Math.PI * 2.0 * i / n, b = Math.PI * 2.0 * (i + 1) / n;
+            d.fan(cx, cy, cx + (float) Math.cos(a) * rx, cy + (float) Math.sin(a) * ry, cx + (float) Math.cos(b) * rx, cy + (float) Math.sin(b) * ry, colour, colour & 0xFFFFFF);
+        }
+    }
+
     // Works out the pose shown: base shape, an idle playing in Build if there is one, the clip at the playhead in Animate.
     private void pose(Compiled c) {
         c.out.clear();
@@ -143,8 +151,8 @@ public final class EditorScreen extends Screen {
     }
 
     private void topBar(float leftW, float rightW, float y, float h) {
-        Draw d = ui.draw;
         float w = ui.width;
+        Draw d = ui.draw;
         // name pill with the black cat
         float x0 = 6f, x1 = 6f + leftW;
         ui.panel(x0, y, x1, y + h, h / 2f);
@@ -220,12 +228,12 @@ public final class EditorScreen extends Screen {
     }
 
     private void viewChips(float cx, float bottom) {
-        float cw = 34f, ch = 13f, n = 5f;
+        float cw = 40f, ch = 13f, n = 5f;
         float x = cx - cw * n / 2f - 3f, y = bottom - ch - 12f;
         ui.panel(x, y - 3f, x + cw * n + 6f, y + ch + 3f, (ch + 6f) / 2f);
-        if (ui.chip("view_front", x + 3f, y, cw, ch, "Front", false)) viewport.view(180f, 8f);
-        if (ui.chip("view_side", x + 3f + cw, y, cw, ch, "Side", false)) viewport.view(90f, 8f);
-        if (ui.chip("view_top", x + 3f + cw * 2f, y, cw, ch, "Top", false)) viewport.view(180f, 80f);
+        if (ui.chip("view_front", x + 3f, y, cw, ch, "Front", false)) viewport.view(0f, 8f);
+        if (ui.chip("view_side", x + 3f + cw, y, cw, ch, "Side", false)) viewport.view(-90f, 8f);
+        if (ui.chip("view_top", x + 3f + cw * 2f, y, cw, ch, "Top", false)) viewport.view(0f, 80f);
         if (ui.chip("view_fit", x + 3f + cw * 3f, y, cw, ch, "Fit", false)) viewport.aimAt(state.compiled());
         if (ui.chip("view_box", x + 3f + cw * 4f, y, cw, ch, "Hitbox", state.showHitbox)) state.showHitbox = !state.showHitbox;
     }
@@ -266,9 +274,13 @@ public final class EditorScreen extends Screen {
             ids.put(tmp, added.id);
             if (first == null) first = added;
         }
-        if (first != null) state.selected = first.id;
+        if (first != null) {
+            state.selected = first.id;
+            state.lastAdded = first.id;
+        }
         state.changed();
         state.commit();
+        viewport.backOffFor(state.compiled());
     }
 
     // ---------- mouse and keys ----------

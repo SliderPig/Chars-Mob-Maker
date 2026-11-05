@@ -30,10 +30,10 @@ final class Viewport {
     private static final int[] AXIS_COLOURS = {Ui.RED, Ui.GREEN, Ui.BLUE};
     private static final Vector3f[] AXES = {new Vector3f(1, 0, 0), new Vector3f(0, 1, 0), new Vector3f(0, 0, 1)};
 
-    float yaw = 205f, pitch = 16f, dist = 5f;
+    float yaw = -28f, pitch = 16f, dist = 5f;
     float tx, ty = 0.9f, tz;
     private final Matrix4f proj = new Matrix4f(), view = new Matrix4f(), viewProj = new Matrix4f(), inverse = new Matrix4f();
-    private float w, h;
+    private float w, h, zoom = 1f;
     private boolean orbiting, panning, moved;
     private float lastX, lastY;
     private int grabAxis = -1, hoverAxis = -1;
@@ -43,11 +43,13 @@ final class Viewport {
     private final Matrix4f model = new Matrix4f();
     private final float[] p0 = new float[3], p1 = new float[3];
 
-    void setup(Ui ui, float freeCx, float freeCy) {
+    // freeHeight: how much of the window the mob really has, so it shrinks to stay in view when the timeline comes up.
+    void setup(Ui ui, float freeCx, float freeCy, float freeHeight) {
         w = ui.width;
         h = ui.height;
+        zoom = Math.min(1f, freeHeight / h);
         float ndcX = freeCx / w * 2f - 1f, ndcY = 1f - freeCy / h * 2f;
-        proj.identity().translate(ndcX, ndcY, 0f).perspective(FOV, w / h, 0.05f, 300f);
+        proj.identity().translate(ndcX, ndcY, 0f).scale(zoom, zoom, 1f).perspective(FOV, w / h, 0.05f, 300f);
         view.identity().translate(0f, 0f, -dist).rotateX(pitch * DEG).rotateY(yaw * DEG).translate(-tx, -ty, -tz);
         proj.mul(view, viewProj);
         viewProj.invert(inverse);
@@ -64,12 +66,23 @@ final class Viewport {
     }
 
     void aimAt(Compiled c) {
-        Stats s = c.design.stats;
-        float reach = Math.max(0.6f, c.rig.reach() / 16f);
-        ty = Math.min(s.height, reach) * 0.5f;
-        tx = 0f;
-        tz = 0f;
-        dist = Math.max(2.4f, reach * 3.4f);
+        float[] b = c.bounds();
+        tx = (b[0] + b[3]) / 32f;
+        ty = (b[1] + b[4]) / 32f;
+        tz = (b[2] + b[5]) / 32f;
+        dist = Math.max(2f, fitDistance(c));
+    }
+
+    private static float fitDistance(Compiled c) {
+        float[] b = c.bounds();
+        float dx = (b[3] - b[0]) / 16f, dy = (b[4] - b[1]) / 16f, dz = (b[5] - b[2]) / 16f;
+        float radius = (float) Math.sqrt(dx * dx + dy * dy + dz * dz) / 2f;
+        return radius / (float) Math.sin(FOV / 2f) * 1.15f;
+    }
+
+    // After adding something big the camera backs off, but never moves in on its own.
+    void backOffFor(Compiled c) {
+        if (fitDistance(c) > dist) aimAt(c);
     }
 
     void view(float yawDeg, float pitchDeg) {
@@ -207,7 +220,7 @@ final class Viewport {
         float ox = p0[0], oy = p0[1];
         Matrix4f frame = c.rig.parent[i] >= 0 ? c.world[c.rig.parent[i]] : new Matrix4f();
         if (s.tool == EditorState.Tool.SIZE) frame = c.world[i];
-        float perBlock = h / (2f * (float) Math.tan(FOV / 2f) * p0[2]);
+        float perBlock = h * zoom / (2f * (float) Math.tan(FOV / 2f) * p0[2]);
         float length = 42f / perBlock;
         boolean free = grabAxis < 0;
         float[][] ends = new float[3][3];
@@ -319,12 +332,17 @@ final class Viewport {
             }
             if (!ui.mouseIsDown()) {
                 orbiting = false;
-                if (!moved) s.selected = pick(ui.mx, ui.my, s);
+                if (!moved) {
+                    s.selected = pick(ui.mx, ui.my, s);
+                    s.lastAdded = "";
+                    s.key = null;
+                    s.keyTrack = null;
+                }
             }
         }
         if (panning) {
             float dx = ui.mx - lastX, dy = ui.my - lastY;
-            float perBlock = h / (2f * (float) Math.tan(FOV / 2f) * dist);
+            float perBlock = h * zoom / (2f * (float) Math.tan(FOV / 2f) * dist);
             Vector3f right = new Vector3f(1, 0, 0).rotateY(-yaw * DEG), up = new Vector3f(0, 1, 0).rotateX(-pitch * DEG).rotateY(-yaw * DEG);
             tx -= (dx * right.x - dy * up.x) / perBlock;
             ty -= (dx * right.y - dy * up.y) / perBlock;
