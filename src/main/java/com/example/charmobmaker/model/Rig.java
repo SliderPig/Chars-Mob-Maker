@@ -18,6 +18,8 @@ public final class Rig {
     private final Map<String, RigClip> clips = new HashMap<>();
     private final float deg = (float) (Math.PI / 180.0);
     private final Matrix4f local = new Matrix4f();
+    // working space for mixing poses, shared by all the mobs of a design (they're drawn one after another)
+    final PoseOut scratchA, scratchB, scratchC;
 
     // A clip with its tracks already pointing at part numbers.
     public static final class RigClip {
@@ -76,6 +78,9 @@ public final class Rig {
             index.put(parts[i].id, i);
         }
         for (Clip c : d.clips) clips.put(c.name, new RigClip(c, index));
+        scratchA = new PoseOut(size);
+        scratchB = new PoseOut(size);
+        scratchC = new PoseOut(size);
     }
 
     private static void walk(Map<String, List<Part>> kids, String id, int parentIndex, int depth, List<Part> order, List<Integer> parents, List<Integer> depths) {

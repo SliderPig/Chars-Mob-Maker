@@ -9,8 +9,6 @@ public final class AnimState {
     private String shot = "";
     private boolean shotOnce;
     private float shotStart;
-    private PoseOut idle, walk, over;
-    private Rig forRig;
 
     // Plays a clip on top. once = a looping clip still only plays through one time.
     public void play(String clip, float now, boolean once) {
@@ -29,12 +27,7 @@ public final class AnimState {
 
     // walkPos and walkSpeed come from the mob's walking animation. deathSeconds is below 0 while alive.
     public void pose(Rig rig, float now, float walkPos, float walkSpeed, float deathSeconds, PoseOut out) {
-        if (forRig != rig) {
-            forRig = rig;
-            idle = new PoseOut(rig.size);
-            walk = new PoseOut(rig.size);
-            over = new PoseOut(rig.size);
-        }
+        PoseOut idle = rig.scratchA, walk = rig.scratchB, over = rig.scratchC;
         out.clear();
         Rig.RigClip idleClip = rig.clip("idle"), walkClip = rig.clip("walk");
         if (idleClip != null) {

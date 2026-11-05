@@ -177,8 +177,7 @@ public final class PartTree {
         Quaternionf q = new Quaternionf();
         local.getUnnormalizedRotation(q);
         q.normalize();
-        Vector3f euler = new Vector3f();
-        q.getEulerAnglesZYX(euler);
+        Vector3f euler = eulerDegrees(q);
         Vector3f t = new Vector3f();
         local.getTranslation(t);
         // local = T(pos + pivot) R S T(-pivot), so pos comes from where the pivot point ends up
@@ -187,15 +186,20 @@ public final class PartTree {
         p.pos[0] = t.x + turned.x - pivot.x;
         p.pos[1] = t.y + turned.y - pivot.y;
         p.pos[2] = t.z + turned.z - pivot.z;
-        float toDeg = (float) (180.0 / Math.PI);
-        p.rot[0] = euler.x * toDeg;
-        p.rot[1] = euler.y * toDeg;
-        p.rot[2] = euler.z * toDeg;
+        p.rot[0] = euler.x;
+        p.rot[1] = euler.y;
+        p.rot[2] = euler.z;
         p.scale[0] = keepSign(p.scale[0], scale.x);
         p.scale[1] = keepSign(p.scale[1], scale.y);
         p.scale[2] = keepSign(p.scale[2], scale.z);
         p.parent = target;
         return true;
+    }
+
+    // Turn numbers for a rotation, in degrees. Goes through a matrix because the quaternion's own version gets X slightly wrong.
+    public static Vector3f eulerDegrees(Quaternionf q) {
+        Vector3f e = new Matrix4f().rotation(q).getEulerAnglesZYX(new Vector3f());
+        return e.mul((float) (180.0 / Math.PI));
     }
 
     private static float keepSign(float old, float size) {

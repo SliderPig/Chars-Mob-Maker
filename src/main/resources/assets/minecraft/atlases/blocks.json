@@ -1,0 +1,8 @@
+{
+  "sources": [
+    {
+      "type": "single",
+      "resource": "charmobmaker:block/white"
+    }
+  ]
+}

@@ -12,7 +12,6 @@ import net.minecraft.server.MinecraftServer;
 import net.minecraft.server.level.ServerLevel;
 import net.minecraft.server.level.ServerPlayer;
 import net.minecraft.world.level.storage.LevelResource;
-import net.minecraft.world.level.storage.LevelResource;
 
 import java.io.IOException;
 import java.io.Reader;
@@ -153,17 +152,27 @@ public final class DesignStore {
             return new Saved(false, "", "That design couldn't be read: " + e.getMessage());
         }
         DesignRules.tidy(d);
+        Design existing = Ids.valid(d.id) ? Designs.SERVER.get(d.id) : null;
+        if (existing != null && !Access.canChange(who, existing)) return new Saved(false, d.id, "That mob belongs to someone else. Save a copy instead.");
+        Saved saved = store(d, who.getStringUUID(), who.getGameProfile().getName());
+        if (saved.ok()) CharMobMaker.LOG.info("[MobMaker] {} saved design {} ({} parts)", who.getGameProfile().getName(), saved.id(), d.parts.size());
+        return saved;
+    }
+
+    // Tidies and keeps a design: a known id overwrites it, anything else gets a fresh id from its name.
+    public static Saved store(Design d, String owner, String author) {
+        if (server == null) return new Saved(false, "", "The server isn't ready.");
+        DesignRules.tidy(d);
         String id = d.id;
         Design existing = Ids.valid(id) ? Designs.SERVER.get(id) : null;
         if (existing != null) {
-            if (!Access.canChange(who, existing)) return new Saved(false, id, "That mob belongs to someone else. Save a copy instead.");
             d.owner = existing.owner;
             d.author = existing.author;
         } else {
             if (Designs.SERVER.size() >= Config.MAX_DESIGNS.get()) return new Saved(false, "", "This world is full of mob designs (" + Config.MAX_DESIGNS.get() + "). Delete some first.");
             id = freeId(Ids.slug(d.name));
-            d.owner = who.getStringUUID();
-            d.author = DesignRules.cleanName(who.getGameProfile().getName(), 32, "");
+            d.owner = owner;
+            d.author = DesignRules.cleanName(author, 32, "");
         }
         d.id = id;
         Path file = fileOf(id);
@@ -177,7 +186,6 @@ public final class DesignStore {
         keep(d);
         broadcast(id);
         refreshMobs(id);
-        CharMobMaker.LOG.info("[MobMaker] {} saved design {} ({} parts)", who.getGameProfile().getName(), id, d.parts.size());
         return new Saved(true, id, "Saved " + d.name);
     }
 

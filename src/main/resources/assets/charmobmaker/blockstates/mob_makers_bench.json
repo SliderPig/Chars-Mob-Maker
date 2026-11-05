@@ -1,0 +1,19 @@
+{
+  "variants": {
+    "facing=north": {
+      "model": "charmobmaker:block/mob_makers_bench"
+    },
+    "facing=east": {
+      "model": "charmobmaker:block/mob_makers_bench",
+      "y": 90
+    },
+    "facing=south": {
+      "model": "charmobmaker:block/mob_makers_bench",
+      "y": 180
+    },
+    "facing=west": {
+      "model": "charmobmaker:block/mob_makers_bench",
+      "y": 270
+    }
+  }
+}

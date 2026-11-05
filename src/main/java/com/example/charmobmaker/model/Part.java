@@ -11,8 +11,8 @@ public final class Part {
         }
     }
 
-    public static final int FACES = 6; // north south east west up down
-    public static final String[] FACE_NAMES = {"N", "S", "E", "W", "U", "D"};
+    public static final int FACES = 6;
+    public static final String[] FACE_NAMES = {"Front", "Back", "Left", "Right", "Top", "Bottom"}; // the mob's own left and right
 
     public String id = "";
     public String name = "Part";
